@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="单词冲刺：免费、离线、可导入自定义词库的背单词拼写小游戏">
+<title>单词冲刺 · 免费背单词小游戏</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1f2e'/%3E%3Cpath d='M36 8 16 38h10l-4 18 22-30H32z' fill='%233ee0f5'/%3E%3Ccircle cx='46' cy='14' r='3.5' fill='%23ffc857'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap">
+<style>
+:root{
+  --bg:#070f1a;--panel:#0d2030;--panel2:#132c40;--line:#265062;--line2:#356b80;
+  --text:#eaf7fa;--muted:#8fb0bd;--cyan:#3ee0f5;--cyan-d:#27bfd2;
+  --green:#5ee6a0;--amber:#ffc857;--red:#ff6b81;
+  --r-lg:20px;--r-md:12px;--shadow:0 20px 45px rgba(0,0,0,.35);
+  --ease:cubic-bezier(.2,.75,.25,1)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;min-height:100vh;color:var(--text);font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-variant-numeric:tabular-nums;background:
+  radial-gradient(1200px 700px at 12% -5%,#133a52 0,transparent 55%),
+  radial-gradient(900px 600px at 105% 8%,#0e3e4a 0,transparent 50%),
+  radial-gradient(1000px 800px at 50% 120%,#0a2233 0,transparent 60%),
+  var(--bg);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:-20%;pointer-events:none;opacity:.42;background-image:radial-gradient(#7adbea66 1px,transparent 1.4px),radial-gradient(#7adbea44 1px,transparent 1.2px);background-size:190px 190px,240px 240px;background-position:0 0,60px 42px;animation:starDrift 28s linear infinite}
+body::after{content:"";position:fixed;inset:-15%;pointer-events:none;opacity:.35;background:radial-gradient(420px 260px at 12% 35%,#3ee0f522,transparent 72%),radial-gradient(500px 320px at 88% 65%,#a45bff18,transparent 70%);filter:blur(28px);animation:aurora 18s ease-in-out infinite alternate}
+@keyframes starDrift{to{background-position:190px 110px,-50px 120px}}
+@keyframes aurora{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(2%,-2%,0) scale(1.08)}}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer;border:0;color:var(--text);background:none}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:4px}
+.app{max-width:1160px;margin:auto;padding:24px;position:relative;z-index:1}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.brand-left{display:flex;align-items:center;gap:14px}
+.logo{width:46px;height:46px;flex:none;filter:drop-shadow(0 0 12px #3ee0f544);animation:logoFloat 4s ease-in-out infinite}
+@keyframes logoFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(2deg)}}
+.logo .lg-bg{fill:#0e2333;stroke:var(--line2)}
+.logo .lg-bolt{fill:var(--cyan)}
+.logo .lg-star{fill:var(--amber)}
+.brand h1{margin:0;font-size:clamp(26px,4vw,40px);letter-spacing:.04em;font-weight:800}
+.brand h1 span{color:var(--cyan);text-shadow:0 0 18px #3ee0f566}
+.brand p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.pill{padding:7px 13px;border:1px solid var(--line2);border-radius:999px;color:var(--green);font-size:12px;white-space:nowrap;background:#0a1c2a80;box-shadow:0 0 20px #3ee0f51a inset,0 0 20px #3ee0f50d;animation:pillGlow 3.6s ease-in-out infinite}
+@keyframes pillGlow{50%{border-color:#4d9fb4;box-shadow:0 0 26px #3ee0f533 inset,0 0 24px #3ee0f51a}}
+.layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(290px,.75fr);gap:18px}
+.panel{position:relative;background:linear-gradient(160deg,rgba(20,48,66,.92),rgba(8,22,34,.94));border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);transition:border-color .35s var(--ease),box-shadow .35s var(--ease),transform .35s var(--ease)}
+.panel:hover{border-color:#397488;box-shadow:0 24px 60px #0008,0 0 34px #3ee0f511;transform:translateY(-1px)}
+.panel::before{content:"";position:absolute;top:0;left:18px;right:18px;height:1px;background:linear-gradient(90deg,transparent,rgba(62,224,245,.55),transparent)}
+.game{min-height:600px;padding:18px;position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,rgba(8,24,37,.72),rgba(6,16,28,.94)),url('assets-battle-bg.png') center/cover no-repeat}
+.game::after{content:"";position:absolute;inset:0;opacity:.15;background-image:radial-gradient(#7adbea 1px,transparent 1px);background-size:19px 19px;pointer-events:none;animation:gridShift 18s linear infinite}
+.game::before{content:"";position:absolute;width:260px;height:260px;right:-100px;top:170px;border-radius:50%;background:radial-gradient(circle,#3ee0f514,transparent 68%);filter:blur(2px);pointer-events:none;animation:orbFloat 8s ease-in-out infinite}
+.game::after{background-image:linear-gradient(135deg,#06152266,#06152222 45%,#06152288),radial-gradient(#7adbea 1px,transparent 1px);background-size:auto,19px 19px}
+@keyframes gridShift{to{background-position:38px 38px}}
+@keyframes orbFloat{50%{transform:translate(-24px,18px) scale(1.12);opacity:.7}}
+.game>*{position:relative}.game .impact-ring,.game .damage-pop,.game .pause-badge{position:absolute}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.stat{background:linear-gradient(150deg,#0a2232cc,#061722aa);border:1px solid #235165;border-radius:12px;padding:9px 10px;transition:transform .25s var(--ease),border-color .25s,background .25s;position:relative;overflow:hidden}
+.stat::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,#ffffff0b 50%,transparent 70%);transform:translateX(-120%);transition:transform .6s var(--ease)}
+.stat:hover{transform:translateY(-2px);border-color:#3b8195;background:linear-gradient(150deg,#103449dd,#061722cc)}
+.stat:hover::after{transform:translateX(120%)}
+.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.stat strong{font-size:17px;font-weight:800}
+.shields{display:flex;gap:5px;justify-content:center;padding-top:2px}
+.shield{width:17px;height:17px}
+.shield.on{fill:var(--cyan)}
+.shield.off{fill:none;stroke:var(--line2);stroke-width:1.7}
+.timer{height:9px;background:#061722;border-radius:99px;overflow:hidden;margin:8px 0 24px;border:1px solid #1d4658;box-shadow:0 0 0 1px #061722,0 0 18px #3ee0f50b}
+.timer i{display:block;width:100%;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .2s linear;box-shadow:0 0 12px #3ee0f577}
+.timer.urgent{animation:timerPulse .72s ease-in-out infinite;border-color:#a74d61}.timer.urgent i{box-shadow:0 0 15px #ff6b81cc}
+@keyframes timerPulse{50%{box-shadow:0 0 0 3px #ff6b8117,0 0 22px #ff6b8138}}
+.battle-strip{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:2px 0 8px;padding:12px 14px;border:1px solid #28576a;border-radius:15px;background:linear-gradient(135deg,#0a2433dd,#071824cc);position:relative;overflow:hidden;box-shadow:inset 0 1px #ffffff08,0 12px 30px #0002}
+.battle-strip::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 18%,#3ee0f511 45%,#fff0 64%);transform:translateX(-100%);animation:scanline 6s ease-in-out infinite}
+.battle-strip.battle-enter{animation:battleEnter .55s var(--ease)}
+@keyframes scanline{0%,30%{transform:translateX(-100%)}65%,100%{transform:translateX(100%)}}
+@keyframes battleEnter{0%{opacity:.4;transform:scale(.985) translateY(5px)}100%{opacity:1;transform:none}}
+.combatant{display:flex;align-items:center;gap:10px;min-width:0}
+.combatant.enemy{justify-content:flex-end;text-align:right}
+.avatar{width:60px;height:60px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#1d536688,#0c263788);border:1px solid #3a788988;font-size:20px;box-shadow:0 0 22px #3ee0f544;flex:none;animation:avatarFloat 3.2s ease-in-out infinite;overflow:visible}
+.avatar-art{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 12px #3ee0f566);pointer-events:none}
+.hero .avatar{background:radial-gradient(circle,#2b788855,transparent 72%);border-color:#3ee0f566}
+.hero .avatar-art{transform:scale(1.24) translateY(4px)}
+.enemy .avatar{background:radial-gradient(circle,#9c3f8055,transparent 72%);border-color:#a55a6e88;box-shadow:0 0 24px #ff6b8155;animation-delay:-1.3s}
+.enemy .avatar-art{transform:scale(1.18)}
+@keyframes avatarFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.combatant strong{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.combatant small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.hp-wrap{margin-top:5px;height:6px;width:min(160px,100%);background:#0a1520;border:1px solid #355062;border-radius:999px;overflow:hidden}
+.hp-wrap i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#5ee6a0,#3ee0f5);transition:width .35s ease}
+.enemy .hp-wrap{margin-left:auto}.enemy .hp-wrap i{background:linear-gradient(90deg,#ff6b81,#ffc857)}
+.versus{font-size:11px;font-weight:800;letter-spacing:.15em;color:var(--amber);padding:7px 8px;border:1px solid #6d5a35;border-radius:999px;background:#2a2110aa;z-index:1;box-shadow:0 0 16px #ffc8571c;animation:versusPulse 2.4s ease-in-out infinite}
+@keyframes versusPulse{50%{box-shadow:0 0 24px #ffc8573d;border-color:#9d804a}}
+.round-progress{display:flex;align-items:center;justify-content:center;gap:5px;margin:10px auto 0;color:var(--muted);font-size:11px}
+.round-progress i{display:block;width:23px;height:5px;border-radius:99px;background:#183242;border:1px solid #2b596d;transition:transform .35s var(--ease),background .35s,border-color .35s}
+.round-progress i.on{background:linear-gradient(90deg,var(--cyan),var(--green));border-color:var(--cyan);box-shadow:0 0 10px #3ee0f566;transform:scaleY(1.25)}
+.battle-log{min-height:20px;margin:8px auto 0;text-align:center;color:var(--muted);font-size:12px}
+.damage-pop{position:absolute;right:20%;top:42%;z-index:5;color:var(--amber);font-weight:900;font-size:24px;pointer-events:none;text-shadow:0 0 14px #ffc857aa;animation:damagePop .75s var(--ease) forwards}
+@keyframes damagePop{0%{opacity:0;transform:translateY(8px) scale(.8)}20%{opacity:1;transform:translateY(0) scale(1.1)}100%{opacity:0;transform:translateY(-38px) scale(1)}}
+.enemy-hit{animation:enemyHit .34s ease-out}
+@keyframes enemyHit{0%,100%{transform:translateX(0)}35%{transform:translateX(8px) rotate(2deg);filter:brightness(1.5)}70%{transform:translateX(-5px)}}
+.streak-hot{color:var(--amber)!important;text-shadow:0 0 12px #ffc85788;animation:streakGlow 1.2s ease-in-out infinite}
+@keyframes streakGlow{50%{text-shadow:0 0 20px #ffc857cc;transform:scale(1.04)}}
+.prompt{text-align:center;padding:30px 15px 24px}
+.prompt.question-enter{animation:promptEnter .52s var(--ease)}
+@keyframes promptEnter{0%{opacity:0;transform:translateY(13px) scale(.985)}100%{opacity:1;transform:none}}
+.tag{color:var(--amber);font-size:12px;letter-spacing:.1em;font-weight:700}
+.meaning{font-size:clamp(20px,3vw,29px);font-weight:700;margin:10px auto 8px;max-width:700px;transition:color .25s}
+.sentence{color:var(--muted);min-height:24px;font-size:13.5px}
+.pattern{display:flex;justify-content:center;flex-wrap:wrap;gap:.07em;margin:26px auto 22px;font-size:clamp(28px,5vw,46px);font-weight:800;min-height:1.1em}
+.pattern .ch{color:rgba(255,255,255,.3);text-shadow:0 0 8px #3ee0f533}
+.pattern .ch.first{color:var(--cyan);text-shadow:0 0 12px #3ee0f5cc,0 0 36px #3ee0f566}
+.pattern .ch.fill{color:var(--green);text-shadow:0 0 12px #5ee6a0aa,0 0 36px #5ee6a044;animation:letterReveal .35s var(--ease) both}
+.pattern .ch.blank{color:rgba(255,255,255,.32)}
+@keyframes letterReveal{from{opacity:0;transform:translateY(7px) scale(.8)}to{opacity:1;transform:none}}
+.input-row{display:flex;gap:10px;max-width:600px;margin:auto}
+#answer{flex:1;min-width:0;border:1px solid #3d7385;border-radius:12px;background:#061722cc;color:#fff;padding:14px 16px;outline:none;font-size:16px;transition:border-color .25s,box-shadow .25s,transform .25s var(--ease)}
+#answer:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #3ee0f533}
+.primary,.secondary{position:relative;overflow:hidden}
+.primary::after,.secondary::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 28%,#fff4 48%,transparent 67%);transform:translateX(-120%);transition:transform .55s var(--ease);pointer-events:none}
+.primary:hover::after,.secondary:hover::after{transform:translateX(120%)}
+.primary{background:linear-gradient(135deg,#27bfd2,#43e7b0);color:#06202a;font-weight:800;padding:0 20px;border-radius:12px;transition:filter .15s,transform .15s var(--ease),box-shadow .2s}
+.primary:hover{box-shadow:0 8px 24px #3ee0f533;transform:translateY(-1px)}
+.primary:active{transform:scale(.97)}
+.secondary{background:#143747;border:1px solid #2d6174;padding:10px 13px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;min-height:44px;transition:filter .15s,transform .15s var(--ease),box-shadow .2s}
+.secondary:active{transform:scale(.97)}
+.secondary:hover,.primary:hover{filter:brightness(1.1)}
+.btn-ico{width:16px;height:16px;fill:currentColor}
+.feedback{min-height:30px;margin-top:14px;text-align:center;font-weight:700;font-size:15px}
+.good{color:var(--green)}
+.bad{color:var(--red)}
+.bottom-row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:30px;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px}
+.pause-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;background:#061522dd;border:1px solid var(--line2);padding:9px 18px;border-radius:999px;z-index:4;color:var(--amber);font-weight:700;font-size:14px;letter-spacing:.08em}
+.game.paused .pause-badge{display:block}
+.side{padding:18px;position:relative;z-index:1;overflow:hidden}
+.side::after{content:"";position:absolute;right:-40px;bottom:18px;width:150px;height:150px;background:url('assets-ui-runes.png') center/contain no-repeat;opacity:.14;pointer-events:none;transform:rotate(12deg);animation:sideRuneFloat 7s ease-in-out infinite}
+@keyframes sideRuneFloat{50%{transform:rotate(20deg) translateY(-8px)}}
+.side h2{font-size:16px;margin:0 0 10px;font-weight:700}
+.side section+section{border-top:1px solid #204354;margin-top:16px;padding-top:16px}
+label{display:block;color:var(--muted);font-size:12.5px;margin:9px 0 5px}
+select,textarea{width:100%;color:var(--text);background:#071b28;border:1px solid #2c5d70;border-radius:10px;padding:10px;outline:none}
+select:focus,textarea:focus{border-color:var(--cyan)}
+textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
+.full{width:100%;padding:11px;margin-top:10px}
+.bank-count{color:var(--muted);font-size:12.5px;margin:6px 0 0}
+.bank-count.warn{color:var(--amber)}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mini{background:#071b28;border:1px solid #204354;border-radius:12px;padding:11px}
+.mini b{font-size:21px;display:block;color:var(--cyan);font-weight:800}
+.mini span{color:var(--muted);font-size:12.5px}
+.progress{background:#061722;height:9px;border-radius:99px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--green));transition:width .3s}
+.tip{color:var(--muted);font-size:13px;line-height:1.65;margin:0}
+.tip code{background:#0a1c2a;border:1px solid #234a5c;padding:1px 5px;border-radius:6px;font-size:11.5px}
+.file{font-size:11.5px;color:var(--muted);width:100%;margin-top:8px}
+.wordcloud{min-height:112px;padding:9px;background:#061722;border:1px solid #204354;border-radius:12px;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:7px;margin-top:4px}
+.wordcloud span{font-weight:700;cursor:pointer;transition:filter .15s}
+.wordcloud span:hover{filter:brightness(1.4)}
+.wordcloud .weak{color:var(--red)}
+.wordcloud .new{color:var(--amber)}
+.wordcloud .mastered{color:var(--green)}
+.sound-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:12.5px;margin:0}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch .track{width:34px;height:19px;border-radius:99px;background:#0a1c2a;border:1px solid #2c5d70;transition:.2s;position:relative;flex:none}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--muted);transition:.2s}
+.switch input:checked+.track{background:#123e53;border-color:var(--cyan-d)}
+.switch input:checked+.track::after{left:17px;background:var(--cyan)}
+.sound-ico{width:15px;height:15px;fill:currentColor}
+.overlay{position:absolute;inset:0;display:none;place-items:center;background:#061522dd;backdrop-filter:blur(4px);z-index:6;padding:20px}
+.overlay.show{display:grid}
+.overlay.show .modal{animation:modalIn .45s var(--ease)}
+@keyframes modalIn{0%{opacity:0;transform:translateY(14px) scale(.96)}100%{opacity:1;transform:none}}
+.modal{max-width:620px;width:100%;padding:24px;border:1px solid #3b7588;border-radius:18px;background:linear-gradient(150deg,#0f3042,#0a202f);box-shadow:0 25px 70px #0008,0 0 36px #3ee0f51a;text-align:center}
+.modal h2{margin:0 0 6px;font-size:22px}
+.modal p{color:var(--muted);margin:0 0 18px;font-size:13px}
+.end-score{font-size:clamp(40px,8vw,64px);font-weight:800;color:var(--cyan);text-shadow:0 0 20px #3ee0f566;margin:6px 0 2px;line-height:1}
+.end-sub{color:var(--muted);margin:0 0 14px}
+.miss-head{font-size:12.5px;color:var(--amber);font-weight:700;margin:2px 0 7px;letter-spacing:.05em}
+.miss-list{margin:0 auto 16px;max-width:440px;text-align:left}
+.miss-item{display:flex;align-items:baseline;gap:10px;padding:6px 11px;border:1px solid #2c5d70;border-radius:9px;background:#0a2232aa;font-size:12.5px;margin-bottom:5px;cursor:pointer;transition:border-color .2s}
+.miss-item:hover{border-color:var(--cyan)}
+.miss-item b{color:var(--cyan);font-weight:700;flex:none;min-width:96px}
+.miss-item span{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(15px);opacity:0;pointer-events:none;padding:10px 16px;border-radius:999px;background:#123747;border:1px solid #39778c;transition:.25s;z-index:10;font-size:13px;box-shadow:0 12px 30px #0006}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.float-score{position:fixed;z-index:20;font-weight:800;color:var(--green);font-size:21px;pointer-events:none;text-shadow:0 0 10px #5ee6a0aa;opacity:1;transition:transform .8s cubic-bezier(.2,.7,.3,1),opacity .8s;animation:scorePop .2s var(--ease)}
+.float-score.fly{transform:translateY(-48px);opacity:0}
+@keyframes scorePop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.game.wrong{animation:shake .35s}
+.game.correct{animation:correctFlash .52s var(--ease)}
+@keyframes correctFlash{0%{box-shadow:var(--shadow)}30%{box-shadow:var(--shadow),0 0 0 3px #5ee6a044,0 0 40px #5ee6a033}100%{box-shadow:var(--shadow)}}
+.impact-ring{position:absolute;width:154px;height:154px;border:0;border-radius:50%;pointer-events:none;z-index:4;background:url('assets-skill-impact.png') center/contain no-repeat;mix-blend-mode:screen;animation:impactRing .62s var(--ease) forwards}
+@keyframes impactRing{from{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-10deg)}35%{opacity:1}to{opacity:0;transform:translate(-50%,-50%) scale(1.18) rotate(12deg)}}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.game{min-height:560px}.stats{grid-template-columns:repeat(3,1fr)}.stats .stat:nth-child(4),.stats .stat:nth-child(5){display:none}}
+@media(max-width:520px){.app{padding:14px}.brand{flex-direction:column;align-items:flex-start}.game,.side{padding:14px}.input-row{flex-direction:column}.primary{padding:12px}.pattern{gap:.05em;letter-spacing:.02em}.bottom-row{flex-direction:column;align-items:flex-start;gap:12px}.battle-strip{gap:7px;padding:10px 8px}.avatar{width:48px;height:48px;font-size:17px}.hero .avatar-art{transform:scale(1.15) translateY(3px)}.enemy .avatar-art{transform:scale(1.1)}.combatant{gap:6px}.combatant strong{font-size:11px}.versus{font-size:9px;padding:6px 5px}.hp-wrap{width:82px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style></head>
+<body><main class="app">
+<header class="brand">
+  <div class="brand-left">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect class="lg-bg" x="1" y="1" width="62" height="62" rx="16"/><path class="lg-bolt" d="M36 8 16 38h10l-4 18 22-30H32z"/><circle class="lg-star" cx="46" cy="13" r="3"/></svg>
+    <div><h1>单词<span>冲刺</span></h1><p>把记忆变成一场小小的冒险 · 拼写、战斗与构筑全都在一局里</p></div>
+  </div>
+  <div class="pill">词汇冒险 · v2.3</div>
+</header>
+<div class="layout">
+<section class="panel game" id="gamePanel">
+  <div class="stats">
+    <div class="stat"><small>回合</small><strong id="round">—</strong></div>
+    <div class="stat"><small>得分</small><strong id="score">0</strong></div>
+    <div class="stat"><small>连击</small><strong id="streak">0</strong></div>
+    <div class="stat"><small>正确率</small><strong id="accuracy">—</strong></div>
+    <div class="stat"><small>护盾</small><strong id="hearts"></strong></div>
+  </div>
+  <div class="timer" id="timer"><i id="timerBar"></i></div>
+  <div class="battle-strip" aria-label="战斗状态">
+    <div class="combatant hero">
+      <div class="avatar"><img class="avatar-art" src="assets-hero.png" alt="词汇旅者"></div>
+      <div><strong>词汇旅者</strong><small id="heroMeta">能量 0 · 连击加成</small><div class="hp-wrap"><i id="heroHp"></i></div></div>
+    </div>
+    <div class="versus">VS</div>
+    <div class="combatant enemy">
+      <div><strong id="enemyName">等待敌人</strong><small id="enemyMeta">Lv.1 · 词语幻兽</small><div class="hp-wrap"><i id="enemyHp"></i></div></div>
+      <div class="avatar" id="enemyAvatar"><img class="avatar-art" src="assets-enemy.png" alt="词语幻兽"></div>
+    </div>
+  </div>
+  <div class="round-progress" id="roundProgress" aria-label="关卡进度"></div>
+  <div class="battle-log" id="battleLog">选好词库后，开始你的第一场遭遇战。</div>
+  <div class="prompt">
+    <div class="tag" id="tag">准备开始</div>
+    <div class="meaning" id="meaning">选择一个词库，开始你的第一局</div>
+    <div class="sentence" id="sentence">答对单词会积累连击，连续三回合可选择一个 Buff。</div>
+    <div class="pattern" id="pattern">— — —</div>
+    <div class="input-row">
+      <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入英文单词，按 Enter 提交" disabled aria-label="拼写输入">
+      <button class="primary" id="submit" disabled>提交</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+  <div class="pause-badge">已暂停</div>
+  <div class="bottom-row">
+    <span id="status">准备就绪：先在右侧选择词库</span>
+    <div class="actions">
+      <button class="secondary" id="speak" disabled title="朗读当前单词"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16 8.5a4.5 4.5 0 010 7"/><path d="M18.5 6a8 8 0 010 12"/></svg>发音</button>
+      <button class="secondary" id="pause" disabled title="暂停 / 继续"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M7 5h3.2v14H7z"/><path d="M13.8 5H17v14h-3.2z"/></svg><span id="pauseTxt">暂停</span></button>
+      <button class="secondary" id="skip" disabled title="跳过本题"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M5 6l9 6-9 6V6z"/><path d="M16 6h3v12h-3z"/></svg>跳过</button>
+      <button class="secondary" id="help" title="查看玩法说明"><svg class="btn-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 013.9-2.2 2.4 2.4 0 01-.7 4.4c-.9.3-1.4.7-1.5 1.7"/><circle cx="12" cy="16.6" r=".6"/></svg>帮助</button>
+    </div>
+  </div>
+  <div class="overlay" id="endOverlay">
+    <div class="modal">
+      <h2 id="endTitle">本局结束</h2>
+      <div class="end-score" id="endScore">0</div>
+      <p class="end-sub" id="endText"></p>
+      <div class="miss-list" id="missList"></div>
+      <button class="primary full" id="restart">再来一局</button>
+    </div>
+  </div>
+  <div class="overlay" id="helpOverlay">
+    <div class="modal">
+      <h2>怎么玩</h2>
+      <p style="text-align:left;line-height:1.85;font-size:13px">
+        ① 看中文释义和例句，在输入框拼出英文单词，按 Enter 提交。<br>
+        ② 限时内答对：对敌人造成伤害并得分；答错或超时：损失 1 点护盾（共 3 点）。<br>
+        ③ 连续答对触发连击，伤害和得分都会提升；越到后面时间越紧，第 10 回合迎战 Boss。<br>
+        ④ 随时按 Esc 暂停；本局答错的词会收录在结束时的错题回顾里，点击可听发音。
+      </p>
+      <button class="primary full" id="helpClose">开始冒险</button>
+    </div>
+  </div>
+</section>
+<aside class="panel side">
+  <section>
+    <h2>开始游戏</h2>
+    <label for="preset">词库</label>
+    <select id="preset"><option value="cet4">四级核心词 · 扩充版</option><option value="daily">日常高频词 · 扩充版</option><option value="advanced">进阶挑战词 · 扩充版</option><option value="online">在线高频词 · 360 词</option><option value="gaokao">高考总复习 · 教材词汇（主题 1–15）</option><option value="custom">我的自定义词库</option></select>
+    <p class="bank-count" id="bankCount"></p>
+    <button class="primary full" id="start">开始闯关</button>
+    <button class="secondary full" id="reviewStart">开始复习薄弱词</button>
+    <p class="tip" id="reviewHint" style="margin-top:8px">复习模式会优先抽取答错或还没练过的词。</p>
+  </section>
+  <section>
+    <h2>今日复习</h2>
+    <div class="mini-grid">
+      <div class="mini"><b id="learned">0</b><span>已掌握词</span></div>
+      <div class="mini"><b id="days">1/21</b><span>记忆计划</span></div>
+    </div>
+    <div class="progress"><i id="reviewBar"></i></div>
+    <p class="tip" style="margin-top:8px">每局答对的词会记入本地进度。浏览器关闭也不会丢失。</p>
+  </section>
+  <section>
+    <h2>自定义词库</h2>
+    <p class="tip">每行一个单词；也可以写成 <code>word｜中文释义</code>。导入后选择“我的自定义词库”。</p>
+    <textarea id="customWords" placeholder="abandon｜放弃&#10;benefit｜好处&#10;challenge｜挑战"></textarea>
+    <input class="file" id="wordFile" type="file" accept=".txt,.csv,.tsv,.json">
+    <button class="secondary full" id="saveWords">保存自定义词库</button>
+  </section>
+  <section>
+    <h2>重点词云</h2>
+    <p class="tip">按练习记录把词分成重点、待巩固和已掌握；点击单词可听发音。</p>
+    <div class="wordcloud" id="wordcloud"><span>先开始一局</span></div>
+    <button class="secondary full" id="refreshCloud">刷新词云</button>
+  </section>
+  <section>
+    <p class="tip">这是一个原创免费原型，借鉴“拼写闯关”这一类通用机制，没有使用原游戏的素材或代码。在线高频词来自公开的 ECDICT 词典数据；教材词库来自本机提供的高考总复习资料（主题 1–15），仅用于本地学习。</p>
+    <div class="sound-row">
+      <label class="switch"><input type="checkbox" id="soundToggle" checked><span class="track"></span>音效</label>
+      <svg class="sound-ico" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/></svg>
+    </div>
+  </section>
+</aside>
+</div></main>
+<div class="toast" id="toast"></div>
+<script src="教材词库.js"></script>
+<script src="教材扩展词库.js"></script>
+<script>
+/* ===== 词库 ===== */
+const BANKS={
+cet4:[['abandon','放弃；遗弃','Never abandon your goal.'],['benefit','好处；受益','Exercise can benefit your health.'],['challenge','挑战','This is a real challenge.'],['curious','好奇的','Children are naturally curious.'],['efficient','高效的','This is an efficient way to learn.'],['environment','环境','We should protect the environment.'],['evidence','证据','Do you have any evidence?'],['feature','特征；功能','The app has a useful feature.'],['focus','专注；焦点','Focus on one word at a time.'],['frequent','频繁的','Frequent review makes memory stronger.'],['impact','影响','Small habits can have a big impact.'],['issue','问题；议题','We need to discuss this issue.'],['maintain','维持；保养','Maintain a steady pace.'],['occur','发生','Accidents can occur at any time.'],['potential','潜力；潜在的','You have great potential.'],['require','需要；要求','The task will require patience.'],['respond','回应；反应','Please respond in English.'],['significant','重要的；显著的','Practice makes a significant difference.'],['strategy','策略','Choose a strategy before you start.'],['transfer','转移；转让','Transfer new words into long-term memory.'],['adapt','适应；改编','We must adapt to change.'],['approach','方法；接近','Try a different approach.'],['assume','假设；认为','Do not assume the answer.'],['consume','消耗；消费','Cars consume a lot of fuel.'],['contrast','对比；反差','The two ideas contrast sharply.'],['decline','下降；拒绝','Sales began to decline.'],['define','定义；解释','Can you define this word?'],['derive','源于；获得','Many words derive from Latin.'],['domestic','国内的；家庭的','Domestic flights are cheaper.'],['emerge','出现；浮现','New problems may emerge.'],['expand','扩大；扩展','The company plans to expand.'],['generate','产生；生成','Wind can generate electricity.'],['indicate','表明；暗示','The sign indicates danger.'],['involve','涉及；包含','The job involves teamwork.'],['justify','证明合理；辩护','Can you justify your choice?'],['link','联系；连接','Link the idea to an example.'],['obtain','获得；得到','You can obtain useful feedback.'],['promote','促进；晋升','Reading promotes critical thinking.'],['reserve','预订；保留','Please reserve a seat.'],['reveal','揭示；显示','The test may reveal a weakness.'],['shift','转移；改变','The focus shifted to practice.'],['sufficient','足够的','We have sufficient time.'],['target','目标；瞄准','Set a clear target.'],['undertake','承担；着手','She undertook a difficult task.'],['vary','变化；不同','Results vary from person to person.'],['accurate','准确的','Make sure your answer is accurate.'],['complex','复杂的','It is a complex problem.'],['confirm','确认；证实','Please confirm your email.'],['essential','必要的；本质的','Sleep is essential for learning.'],['flexible','灵活的','Keep your study plan flexible.'],['interpret','解释；口译','How do you interpret the result?'],['nevertheless','然而；不过','It was hard; nevertheless, we continued.'],['precise','精确的','Use precise language.'],['priority','优先事项','Health is our first priority.'],['relevant','相关的','Give only relevant examples.'],['stable','稳定的','We need a stable routine.'],['transform','改变；转化','Practice can transform your skill.'],['valid','有效的；合理的','That is a valid point.'],['withdraw','撤回；退出','He decided to withdraw from the race.']],
+daily:[['apple','苹果','I eat an apple every day.'],['bright','明亮的；聪明的','The room is bright.'],['bridge','桥','We walked across the bridge.'],['cloud','云','A cloud covered the sun.'],['dream','梦想；做梦','Follow your dream.'],['early','早的；提早','I get up early.'],['friendly','友好的','She is friendly to everyone.'],['garden','花园','There are flowers in the garden.'],['hurry','匆忙','There is no need to hurry.'],['invite','邀请','I will invite my friends.'],['journey','旅行','The journey was wonderful.'],['kind','善良的；种类','What kind of music do you like?'],['lucky','幸运的','You are lucky today.'],['message','消息；信息','I got your message.'],['notice','注意到；通知','Did you notice the change?'],['quiet','安静的','Please keep quiet.'],['ready','准备好的','Are you ready?'],['simple','简单的','Keep it simple.'],['together','一起','We can learn together.'],['wonder','想知道；奇迹','I wonder what will happen.'],['around','在附近；大约','There is a cafe around the corner.'],['borrow','借入','Can I borrow your pen?'],['careful','小心的','Be careful on the stairs.'],['celebrate','庆祝','Let us celebrate your success.'],['choose','选择','Choose one word to begin.'],['comfortable','舒适的','These shoes are comfortable.'],['complete','完成；完整的','Complete the sentence.'],['corner','角落；拐角','The shop is on the corner.'],['delicious','美味的','Dinner smells delicious.'],['enough','足够的','Do we have enough time?'],['exercise','锻炼；练习','A little exercise helps.'],['famous','著名的','The city is famous for tea.'],['forget','忘记','Do not forget to review.'],['guess','猜测','Can you guess the word?'],['helpful','有帮助的','Your advice was helpful.'],['honest','诚实的','Be honest with yourself.'],['important','重要的','Sleep is important.'],['local','当地的','Try a local dish.'],['manage','设法做到；管理','I managed to finish early.'],['mistake','错误','Everyone makes a mistake.'],['normal','正常的','It is normal to forget.'],['perfect','完美的','No answer needs to be perfect.'],['practice','练习','Practice a little every day.'],['promise','承诺','I promise to keep trying.'],['protect','保护','Protect your eyes from bright light.'],['repair','修理','Can you repair the bike?'],['return','返回；归还','Please return the book tomorrow.'],['share','分享','Share your new word with a friend.'],['solve','解决','Let us solve this together.'],['station','车站；台','Meet me at the station.'],['suggest','建议','I suggest a short break.'],['support','支持','Friends support each other.'],['surprise','惊喜；使惊讶','The gift was a surprise.'],['ticket','票；券','Keep your ticket safe.'],['travel','旅行','I love to travel.'],['useful','有用的','This is a useful phrase.'],['visit','参观；拜访','We will visit the museum.'],['weather','天气','The weather is lovely today.'],['welcome','欢迎；受欢迎的','You are always welcome here.'],['wonderful','精彩的','You did a wonderful job.']],
+advanced:[['ambiguous','含糊的','The question is ambiguous.'],['coherent','连贯的','Write a coherent paragraph.'],['consecutive','连续的','She won three consecutive games.'],['controversial','有争议的','It is a controversial issue.'],['deduce','推断','We can deduce the answer.'],['diminish','减弱；减少','The pain began to diminish.'],['distort','扭曲；曲解','Do not distort the facts.'],['elaborate','详尽的；阐述','Please elaborate on your idea.'],['empirical','经验性的','The claim needs empirical support.'],['feasible','可行的','The plan is feasible.'],['hierarchy','层级；等级制度','The chart shows the hierarchy.'],['imply','暗示','His silence may imply agreement.'],['inhibit','抑制；阻碍','Fear can inhibit learning.'],['innovative','创新的','They designed an innovative tool.'],['integrate','整合；融入','Integrate review into your routine.'],['intrinsic','内在的','Curiosity has intrinsic value.'],['meticulous','一丝不苟的','She is meticulous about details.'],['notwithstanding','尽管','Notwithstanding the risk, we continued.'],['paradigm','范式；模型','The discovery changed the paradigm.'],['plausible','似乎合理的','That sounds plausible.'],['precede','先于','A short warm-up should precede the test.'],['reinforce','加强；巩固','Review reinforces memory.'],['resilient','有韧性的','A resilient learner keeps going.'],['rigorous','严谨的','The study used rigorous methods.'],['subtle','微妙的','There is a subtle difference.'],['sustain','维持；支撑','Small habits sustain progress.'],['tentative','试探性的','We made a tentative plan.'],['undermine','削弱','Doubt can undermine confidence.'],['unprecedented','前所未有的','The event was unprecedented.'],['versatile','多用途的；多才多艺的','This is a versatile method.'],['allocate','分配','Allocate ten minutes to review.'],['articulate','清楚表达','Try to articulate your opinion.'],['comprehensive','全面的','We need a comprehensive review.'],['constrain','限制','Time may constrain our choices.'],['facilitate','促进；使便利','Pictures facilitate understanding.'],['fundamental','基本的；根本的','Vocabulary is fundamental to reading.'],['incorporate','纳入；包含','Incorporate new words into a sentence.'],['persistent','坚持不懈的','Persistent practice pays off.'],['simulate','模拟','The game simulates a real battle.'],['strategic','战略性的','Take a strategic approach.']]};
+
+/* ===== 扩充词库：原创补充词条（释义 + 例句留空时使用通用提示） ===== */
+const EXTRA_BANKS={
+  cet4:[
+    ['analyze','分析'],['annual','每年的；年度的'],['apparent','明显的；表面上的'],['appreciate','欣赏；感激'],['assign','分配；布置'],['attract','吸引'],['authority','权威；权力'],['capacity','能力；容量'],['circumstance','情况；环境'],['concentrate','集中；专心'],['conduct','实施；行为'],['consequence','后果；结果'],['contribute','贡献；投稿'],['criteria','标准；准则'],['data','数据；资料'],['distribute','分发；分布'],['diverse','多样的'],['economy','经济；节约'],['emphasize','强调'],['enable','使能够'],['encounter','遇到；遭遇'],['establish','建立；确立'],['estimate','估计；估价'],['evaluate','评估；评价'],['eventually','最终；终于'],['factor','因素；因子'],['finance','金融；资助'],['function','功能；运作'],['individual','个人；个体'],['inspire','激励；启发'],['lecture','讲座；演讲'],['logical','合逻辑的'],['negative','消极的；负面的'],['objective','目标；客观的'],['participate','参加；参与'],['perceive','察觉；理解'],['principle','原则；原理'],['publish','出版；发表'],['recover','恢复；找回'],['region','地区；区域'],['regulate','调节；管理'],['reliable','可靠的'],['section','部分；章节'],['select','选择；挑选'],['seek','寻找；寻求'],['source','来源；源头'],['specific','具体的；特定的'],['structure','结构；组织'],['survey','调查；概述'],['symbol','象征；符号'],['technique','技巧；技术'],['temporary','暂时的'],['topic','主题；话题'],['unique','独特的'],['overall','总体的'],['previous','先前的'],['primary','主要的；初级的'],['physical','身体的；物理的'],['psychological','心理的'],['sustain','维持；支撑'],['transform','改变；转化']
+  ],
+  daily:[
+    ['beach','海滩'],['blanket','毯子'],['bottle','瓶子'],['breakfast','早餐'],['camera','相机'],['cancel','取消'],['cashier','收银员'],['change','改变；零钱'],['chat','聊天'],['cheap','便宜的'],['clean','干净的；打扫'],['collect','收集'],['cook','烹饪'],['cough','咳嗽'],['crowded','拥挤的'],['deliver','递送'],['dentist','牙医'],['direction','方向；指示'],['discount','折扣'],['entrance','入口'],['envelope','信封'],['floor','地板；楼层'],['follow','跟随；遵守'],['grocery','食品杂货'],['habit','习惯'],['healthy','健康的'],['helmet','头盔'],['host','主人；主持'],['hungry','饥饿的'],['internet','互联网'],['jacket','夹克'],['kitchen','厨房'],['laugh','笑；笑声'],['lazy','懒惰的'],['library','图书馆'],['luggage','行李'],['market','市场'],['medicine','药物'],['mirror','镜子'],['neighbor','邻居'],['passenger','乘客'],['phone','电话；打电话'],['pocket','口袋'],['polite','有礼貌的'],['prepare','准备'],['receipt','收据'],['restaurant','餐厅'],['shower','淋浴；阵雨'],['sleepy','困倦的'],['snack','零食'],['subway','地铁'],['towel','毛巾'],['traffic','交通'],['umbrella','雨伞'],['wallet','钱包'],['wash','洗；洗涤'],['weekend','周末'],['airport','机场'],['appointment','约会；预约'],['battery','电池'],['bicycle','自行车'],['birthday','生日']
+  ],
+  advanced:[
+    ['analogy','类比；比喻'],['compatible','兼容的；合得来的'],['consensus','共识'],['cumulative','累积的'],['decisive','决定性的；果断的'],['disperse','分散；驱散'],['dynamic','动态的；有活力的'],['evoke','唤起；引起'],['explicit','明确的；直率的'],['implicit','含蓄的；暗含的'],['inevitable','不可避免的'],['infer','推断；推论'],['manipulate','操纵；巧妙处理'],['nuance','细微差别'],['optimize','优化'],['paradox','悖论；矛盾的人或事'],['preliminary','初步的'],['profound','深刻的；深远的'],['quantify','量化'],['reconcile','调和；使一致'],['refine','改进；提炼'],['restrain','抑制；约束'],['simultaneous','同时的'],['speculate','推测；投机'],['supplementary','补充的'],['theoretical','理论的'],['transparent','透明的；清晰的'],['ubiquitous','无处不在的'],['validate','验证；使生效'],['volatile','易变的；挥发性的'],['aggregate','总计；聚合的'],['arbitrary','任意的；武断的'],['concise','简洁的'],['contradict','反驳；与……矛盾'],['credible','可信的'],['enhance','增强；提高'],['hypothetical','假设的'],['immense','巨大的'],['marginal','边缘的；微小的'],['robust','强健的；稳固的'],['systematic','系统的；有条理的'],['tangible','有形的；切实的']
+  ]
+};
+Object.keys(EXTRA_BANKS).forEach(k=>{
+  const base=BANKS[k]||(BANKS[k]=[]),seen=new Set(base.map(x=>x[0]));
+  for(const [w,m] of EXTRA_BANKS[k])if(!seen.has(w)){seen.add(w);base.push([w,m,''])}
+});
+
+/* ===== 教材词库：从本地教材整理的单词 + 练习例句 ===== */
+const GAOKAO_CORE_EXAMPLES={
+  addict:'He became addicted to mobile games and had to change his routine.',
+  apply:'You can apply this study strategy to your next review.',
+  credit:'She deserves credit for solving the difficult problem.',
+  engage:'Good questions engage students in a lively discussion.',
+  equip:'The library is equipped with computers for students.',
+  frighten:'Do not let one difficult word frighten you.',
+  impress:'Her clear presentation impressed the whole class.',
+  inform:'Please inform the teacher if you need more time.',
+  recommend:'I recommend reviewing new words in short sessions.',
+  refer:'Please refer to the notes when you forget a definition.',
+  schedule:'We scheduled a short review before the exam.',
+  submit:'Remember to submit your homework before Friday.',
+  abandon:'Never abandon a goal just because progress feels slow.',
+  absorb:'Quiet music can help me absorb new information.',
+  adjust:'You can adjust the study plan after checking your progress.',
+  attempt:'She made another attempt to spell the word correctly.',
+  curious:'Curious students often ask useful questions.',
+  eager:'He is eager to improve his English.',
+  rely:'You cannot rely on guessing alone.',
+  reward:'A small break can be a reward after focused study.',
+  stress:'The teacher stressed the importance of regular review.',
+  struggle:'Many learners struggle with similar spellings at first.',
+  vital:'Sleep is vital for memory and concentration.',
+  worthwhile:'Daily review is worthwhile when preparing for an exam.',
+  heritage:'The old temple is an important part of our cultural heritage.',
+  cuisine:'The festival lets visitors taste traditional local cuisine.',
+  collaborate:'Scientists from several countries collaborate on the project.',
+  milestone:'Passing the exam was a major milestone in her learning journey.',
+  qualification:'This certificate is a useful qualification for the job.',
+  perspective:'Travel can give students a wider perspective on the world.',
+  negotiate:'Both sides agreed to negotiate a fair solution.',
+  tolerance:'Listening carefully is a simple way to show tolerance.',
+  ecosystem:'Every species plays a role in a healthy ecosystem.',
+  biodiversity:'Protecting biodiversity keeps natural systems resilient.',
+  sustainable:'The city is investing in sustainable public transport.',
+  innovation:'Innovation often begins with a small question.',
+  algorithm:'The app uses an algorithm to arrange the review words.',
+  emergency:'Keep calm and follow the emergency instructions.',
+  volcano:'The guide warned us not to approach the active volcano.',
+  arctic:'The research team studied animals living in the Arctic.',
+  yogurt:'I usually eat yogurt and fruit for breakfast.',
+  childhood:'She still remembers the stories from her childhood.',
+  confucius:'The museum displayed a short passage about Confucius.'
+};
+function gaokaoExample(word,meaning){
+  if(GAOKAO_CORE_EXAMPLES[word])return GAOKAO_CORE_EXAMPLES[word];
+  const templates=[
+    `The teacher asked us to use “${word}” in a sentence.`,
+    `Writing one sentence with “${word}” helps me remember it.`,
+    `I reviewed “${word}” in context before the exam.`,
+    `A clear example makes the meaning of “${word}” easier to understand.`
+  ];
+  let n=0;for(const c of word) n=(n+c.charCodeAt(0))%templates.length;return templates[n];
+}
+if(window.GBANK?.themes){
+  const seen=new Set(),rows=[];
+  for(const theme of window.GBANK.themes){
+    for(const section of theme.sections||[]){
+      for(const entry of section.words||[]){
+        const word=String(entry[0]||'').trim().toLowerCase();
+        if(!/^[a-z][a-z-]*$/.test(word)||seen.has(word))continue;
+        seen.add(word);
+        const meaning=String(entry[1]||'').replace(/\s+/g,' ').trim();
+        rows.push([word,meaning,gaokaoExample(word,meaning)]);
+      }
+    }
+  }
+  BANKS.gaokao=rows;
+}
+if(Array.isArray(window.GAOKAO_EXTRA)){
+  const base=BANKS.gaokao||[],seen=new Set(base.map(x=>x[0]));
+  const fixWord={onfucius:'confucius',urt:'yogurt',rctic:'arctic',hood:'childhood'};
+  const extra=window.GAOKAO_EXTRA.map(([word,meaning,example])=>{
+    const w=fixWord[word]||word;
+    const m=String(meaning||'').replace(/\s+[A-Z]{1,3}$/,'').replace(/[\[\](){}<>]+$/,'').trim();
+    return [w,m,example||gaokaoExample(w,m)];
+  }).filter(row=>row[0]&&row[1]&&!seen.has(row[0]));
+  BANKS.gaokao=base.concat(extra);
+}
+
+/* ===== 在线公开词频词条（ECDICT 整理，保留常用词） ===== */
+const ONLINE_BANK=[["make","\u5236\u9020, \u5b89\u6392, \u521b\u9020, \u6784\u6210, \u4f7f\u5f97, \u4ea7\u751f, \u9020\u6210, ",""],["know","\u77e5\u9053, \u4e86\u89e3, \u8ba4\u8bc6, \u786e\u4fe1",""],["time","\u65f6\u95f4, \u65f6\u4faf, \u65f6\u673a, \u65f6\u671f, \u671f\u9650, \u6b21\u6570, \u8282\u62cd, ",""],["year","\u5e74, \u5e74\u5ea6, \u5e74\u9f84",""],["think","\u60f3, \u8003\u8651, \u60f3\u8d77, \u60f3\u50cf, \u6253\u7b97, \u8ba4\u4e3a",""],["people","\u4eba, \u4eba\u6c11, \u6c11\u65cf, \u5e73\u6c11",""],["take","\u62ff, \u53d6, \u6293, \u5e26\u9886, \u83b7\u5f97, \u5c31\u5ea7, \u63a5\u53d7, \u5403, ",""],["come","\u8fc7\u6765, \u6765, \u5230\u8fbe, \u51fa\u73b0, \u5f00\u59cb",""],["like","\u76f8\u4f3c\u7684, \u540c\u6837\u7684",""],["want","\u9700\u8981\u7684\u4e1c\u897f, \u7f3a\u4e4f, \u8d2b\u56f0, \u9700\u8981",""],["look","\u4e00\u770b, \u795e\u8272, \u6837\u5b50, \u9762\u5bb9",""],["first","\u9996\u5148, \u7b2c\u4e00, \u4f18\u5148",""],["find","\u53d1\u73b0, \u611f\u5230, \u627e\u5230, \u8ba4\u4e3a, \u5f97\u5230",""],["thing","\u4e8b\u7269, \u4e1c\u897f, \u7269, \u7528\u54c1, \u4e8b, \u4e8b\u4ef6, \u60c5\u51b5, \u884c\u4e3a",""],["give","\u5f39\u6027, \u9002\u5e94\u6027",""],["many","\u591a\u6570, \u591a\u6570\u4eba",""],["well","\u4e95, \u6cc9\u6c34, \u6e90\u6cc9, \u597d",""],["tell","\u544a\u8bc9, \u8bf4, \u5429\u5490, \u65ad\u5b9a, \u77e5\u9053",""],["back","\u540e\u9762\u7684",""],["good","\u5584\u884c, \u597d\u5904, \u5229\u76ca",""],["woman","\u5973\u4eba, \u5987\u5973, \u5973\u4ec6",""],["life","\u751f\u6d3b, \u751f\u547d, \u4eba\u751f, \u4e16\u4e8b, \u751f\u7269, \u5bff\u547d, \u4e00\u751f, ",""],["child","\u5b69\u5b50, \u4ea7\u7269, \u8ffd\u968f\u8005",""],["work","\u5de5\u4f5c, \u52b3\u52a8, \u804c\u4e1a, \u884c\u4e3a, \u529f, \u4f5c\u54c1, \u6210\u679c, \u4ea7",""],["call","\u547c\u53eb, \u8bbf\u95ee, \u6253\u7535\u8bdd, \u53f7\u53ec, \u53ec\u96c6, \u8981\u6c42",""],["world","\u4e16\u754c, \u5730\u7403, \u5b87\u5b99, \u4e07\u7269, \u4e16\u4eba, \u4eba\u95f4, \u9886\u57df, ",""],["school","\u5b66\u6821, \u9c7c\u7fa4, \u95e8\u6d3e, \u5b66\u6d3e",""],["still","\u84b8\u998f\u5ba4, \u5bc2\u9759, \u5267\u7167",""],["last","\u6700\u540e\u7684, \u672b\u5c3e\u7684, \u6700\u8fd1\u7684",""],["need","\u9700\u8981, \u5fc5\u987b, \u7f3a\u4e4f",""],["feel","\u611f\u89c9, \u89c9\u5f97, \u89e6\u6478, \u4ee5\u4e3a",""],["three","\u4e09, \u4e09\u4e2a",""],["state","\u5dde, \u72b6\u6001, \u60c5\u5f62, \u56fd\u5bb6, \u653f\u5e9c, \u9886\u571f, \u56fd\u52a1, \u793e",""],["become","\u53d8\u6210, \u53d8\u5f97",""],["high","\u9ad8\u5ea6, \u9ad8\u5904",""],["something","\u67d0\u4e8b, \u67d0\u7269",""],["really","\u5b9e\u9645\u4e0a, \u771f\u5b9e\u5730, \u5b9e\u5728",""],["family","\u5bb6\u5ead, \u5bb6\u4eba, \u65cf",""],["leave","\u8bb8\u53ef, \u544a\u522b, \u8bf7\u5047, \u4f11\u5047",""],["mean","\u4f4e\u52a3\u7684, \u5351\u8d31\u7684, \u7b80\u964b\u7684, \u541d\u556c\u7684, \u60ed\u6127\u7684, \u5e73\u5747\u7684",""],["keep","\u751f\u8ba1, \u7ef4\u6301, \u4fdd\u6301",""],["student","\u5b66\u751f, \u7814\u7a76\u8005, \u5b66\u8005",""],["great","\u5927\u7684, \u975e\u5e38\u7684, \u4e3b\u8981\u7684, \u91cd\u5927\u7684, \u5d07\u9ad8\u7684, \u4f1f\u5927\u7684",""],["group","\u56e2\u4f53, \u7ec4, \u56e2, \u7fa4",""],["begin","\u5f00\u59cb",""],["seem","\u8c61\u662f, \u4f3c\u4e4e",""],["country","\u56fd\u5bb6, \u4e61\u6751, \u5730\u533a, \u6545\u4e61",""],["help","\u5e2e\u5fd9, \u5e2e\u52a9\u8005, \u8865\u6551\u529e\u6cd5, \u6709\u76ca\u7684\u4e1c\u897f",""],["talk","\u8c08\u8bdd, \u4ea4\u8c08, \u4f1a\u8c08, \u8bb2\u8bdd, \u6f14\u8bb2, \u7a7a\u8c08, \u8c23\u8a00, ",""],["turn","\u8f6c\u5f2f, \u8f6c\u52a8, \u65cb\u8f6c, \u7ffb\u8f6c, \u4e00\u5708, \u987a\u6b21, \u6539\u52a8, ",""],["problem","\u95ee\u9898, \u96be\u9898",""],["start","\u60ca\u8d77, \u51fa\u53d1, \u5f00\u7aef, \u8d77\u70b9, \u5403\u60ca, \u6709\u5229\u6761\u4ef6",""],["hand","\u624b, \u722a, \u6307\u9488, \u638c\u63e1, \u534f\u52a9, \u4eba\u624b, \u624b\u827a, \u624b\u8ff9",""],["american","\u7f8e\u56fd\u4eba",""],["show","\u663e\u793a, \u8868\u73b0, \u5c55\u89c8, \u5356\u5f04, \u70ab\u8000, \u5916\u89c2, \u6f14\u51fa, ",""],["part","\u90e8\u5206, \u5c40\u90e8, \u96f6\u4ef6, \u8981\u7d20, \u7b49\u5206, \u804c\u8d23, \u89d2\u8272, ",""],["place","\u5730\u65b9, \u5730\u70b9, \u4f4d\u7f6e, \u4f4f\u6240, \u5ea7\u4f4d, \u5730\u4f4d, \u5904\u5883, ",""],["case","\u60c5\u5f62, \u60c5\u51b5, \u7bb1, \u5bb9\u5668, \u4e8b\u5b9e, \u75c5\u4f8b, \u6848\u4f8b, \u6846",""],["week","\u661f\u671f, \u5468",""],["company","\u516c\u53f8, \u53cb\u4f34, \u4ea4\u5f80, \u8fde\u961f, \u670b\u53cb, \u4e00\u7fa4",""],["system","\u7cfb\u7edf, \u4f53\u7cfb, \u5236\u5ea6, \u65b9\u5f0f, \u79e9\u5e8f, \u5206\u7c7b\u539f\u5219",""],["right","\u6743\u5229, \u53f3\u8fb9, \u6b63\u4e49, \u53f3\u6d3e, \u516c\u6b63",""],["program","\u8282\u76ee, \u8282\u76ee\u5355, \u7a0b\u5e8f, \u7eb2\u8981, \u5927\u7eb2, \u8ba1\u5212",""],["hear","\u542c\u5230, \u503e\u542c, \u542c\u8bf4, \u5ba1\u7406",""],["question","\u95ee\u9898, \u8be2\u95ee",""],["play","\u6e38\u620f, \u6e38\u73a9, \u73a9\u7b11, \u8fd0\u52a8, \u6bd4\u8d5b, \u8d4c\u535a, \u8df3\u52a8, ",""],["government","\u653f\u5e9c, \u5185\u9601",""],["small","\u5c0f\u7684, \u5c11\u7684, \u5c0f\u578b\u7684, \u4f4e\u5fae\u7684, \u5c0f\u6c14\u7684, \u7ec6\u5fae\u7684",""],["number","\u6570, \u6570\u5b57, \u6570\u76ee, \u53f7\u7801",""],["always","\u603b\u662f, \u59cb\u7ec8",""],["move","\u79fb\u52a8, \u8fc1\u5c45, \u6b65\u9aa4",""],["night","\u591c, \u591c\u665a, \u665a\u4e0a, \u9ed1\u6697, \u591c\u665a\u7684\u5de5\u4f5c",""],["live","\u6d3b\u7684, \u751f\u52a8\u7684, \u7cbe\u529b\u5145\u6c9b\u7684, \u5b9e\u51b5\u8f6c\u64ad\u7684",""],["point","\u70b9, \u5c0f\u6570\u70b9, \u6807\u70b9, \u5730\u70b9, \u8981\u70b9, \u7279\u70b9, \u5c16\u7aef, ",""],["believe","\u76f8\u4fe1",""],["hold","\u628a\u63e1, \u628a\u6301\u529b, \u67c4, \u63a7\u5236, \u638c\u63e1, \u76d1\u7981",""],["today","\u4eca\u5929, \u5f53\u4eca, \u73b0\u5728",""],["bring","\u5e26\u6765, \u4ea7\u751f, \u4fc3\u4f7f, \u63d0\u51fa",""],["happen","\u53d1\u751f, \u53d1\u751f, \u6070\u5de7",""],["next","\u4e0b\u4e00\u4e2a",""],["without","\u6ca1\u6709, \u4e0d, \u5728",""],["large","\u5927\u7684, \u5927\u91cf\u7684, \u5bbd\u5927\u7684, \u5e7f\u535a\u7684",""],["million","\u767e\u4e07, \u65e0\u6570",""],["home","\u5bb6, \u907f\u96be\u6240, \u6545\u4e61",""],["water","\u6c34, \u96e8\u6c34, \u6d77\u6c34, \u6c34\u4f4d, \u6c34\u9762, \u6d41\u6c34",""],["room","\u623f\u95f4, \u7a7a\u4f4d, \u573a\u6240",""],["write","\u4e66\u5199, \u8457\u8ff0, \u5199, \u5199\u6ee1, \u5199\u4fe1\u7ed9",""],["mother","\u6bcd\u4eb2, \u4fee\u5973\u9662\u957f",""],["area","\u533a\u57df, \u9762\u79ef, \u8303\u56f4, \u7a7a\u5730",""],["national","\u56fd\u5bb6\u7684, \u56fd\u7acb\u7684, \u5168\u56fd\u6027\u7684, \u6c11\u65cf\u7684",""],["money","\u91d1\u94b1, \u4e00\u7b14\u6b3e, \u8d22\u5bcc, \u8d27\u5e01, \u91d1\u989d",""],["story","\u6545\u4e8b, \u5c0f\u8bf4, \u4f20\u5947, \u63cf\u8ff0, \u9605\u5386, \u7ecf\u5386, \u5c42",""],["young","\u5e74\u8f7b\u7684, \u65e0\u7ecf\u9a8c\u7684, \u671d\u6c14\u84ec\u52c3\u7684",""],["fact","\u4e8b\u5b9e, \u771f\u5b9e\u6027, \u771f\u76f8, \u7ec6\u8282, \u8bba\u636e",""],["month","\u6708",""],["different","\u4e0d\u540c\u7684",""],["study","\u5b66\u4e60, \u7814\u7a76, \u5b66\u79d1, \u8bba\u6587, \u6c42\u5b66, \u4e66\u623f, \u8bd5\u4f5c",""],["book","\u4e66, \u4e66\u7c4d, \u5e10\u7c3f, \u540d\u518c, \u5de5\u4f5c\u7c3f",""],["word","\u8bdd, \u6d88\u606f, \u8bcd, \u8bfa\u8a00, \u547d\u4ee4",""],["though","\u7136\u800c, \u53ef\u662f",""],["business","\u751f\u610f, \u4e8b\u60c5, \u4e1a\u52a1, \u5546\u4e1a, \u5546\u884c, \u804c\u8d23",""],["four","\u56db, \u56db\u4e2a",""],["side","\u65c1\u8fb9, \u4fa7, \u65b9\u9762, \u80c1, \u4fa7\u8fb9, \u8840\u7edf",""],["head","\u5934, \u5934\u8111, \u9886\u8896, \u8111\u888b, \u6700\u524d\u7684\u90e8\u5206",""],["black","\u9ed1\u8272, \u9ed1\u989c\u6599",""],["long","\u957f\u7684, \u957f\u4e45\u7684, \u5197\u957f\u7684, \u505a\u591a\u5934\u7684",""],["little","\u4e00\u70b9\u70b9, \u5c11\u8bb8, \u4e00\u4f1a\u513f, \u77ed\u65f6\u95f4",""],["house","\u623f\u5b50, \u4f4f\u5b85, \u673a\u6784, \u8bae\u9662, \u5bb6\u65cf, \u5bb6\u5ead",""],["provide","\u63d0\u4f9b, \u4f9b\u5e94, \u89c4\u5b9a, \u9884\u5907",""],["service","\u670d\u52a1, \u8d21\u732e, \u96c7\u4f63, \u516c\u804c, \u670d\u5f79, \u529f\u52b3, \u4eea\u5f0f, ",""],["friend","\u670b\u53cb, \u652f\u6301\u8005, \u8d5e\u52a9\u8005",""],["father","\u7236\u4eb2, \u7956\u5148, \u957f\u8f88, \u795e\u7236, \u521b\u59cb\u8005",""],["power","\u529b, \u4f53\u529b, \u529b\u91cf, \u52bf\u529b, \u52a8\u529b, \u6743\u529b, \u5f3a\u56fd, \u4e58",""],["hour","\u5c0f\u65f6, \u949f\u5934, \u65f6\u95f4,",""],["game","\u6bd4\u8d5b, \u73a9\u800d, \u6bd4\u5206, \u5f97\u80dc, \u6bd4\u8d5b\u89c4\u5219, \u7b56\u7565, \u6e38\u620f",""],["often","\u65f6\u5e38, \u5e38\u5e38",""],["line","\u5217, \u7ebf, \u7ef3, \u7535\u7ebf, \u7ebf\u8def, \u8def\u7ebf, \u822a\u7ebf, \u4f5c\u4e1a\u7ebf",""],["political","\u653f\u6cbb\u7684, \u653f\u6cbb\u4e0a\u7684, \u653f\u515a\u7684, \u4ece\u4e8b\u653f\u6cbb\u7684",""],["stand","\u7ad9\u7acb, \u7ad9\u4f4f, \u505c\u987f, \u8bb2\u53f0, \u770b\u53f0, \u7acb\u573a, \u6cd5\u9662\u8bc1\u4eba",""],["lose","\u9057\u5931, \u635f\u5931, \u4e22\u5931, \u4f7f\u5931\u53bb, \u9519\u8fc7, \u6d6a\u8d39, \u8ff7\u5931,",""],["however","\u7136\u800c, \u65e0\u8bba\u5982\u4f55, \u7a76\u7adf\u600e\u6837",""],["member","\u6210\u5458, \u4f1a\u5458",""],["meet","\u4f1a, \u96c6\u4f1a",""],["city","\u57ce\u5e02, \u5e02",""],["include","\u5305\u62ec, \u628a",""],["continue","\u7ee7\u7eed, \u5ef6\u7eed, \u5ef6\u957f",""],["later","\u4ee5\u540e, \u968f\u540e",""],["community","\u793e\u533a, \u516c\u4f17, \u5171\u6709, \u5171\u540c\u4f53",""],["name","\u540d\u5b57, \u540d\u79f0, \u59d3\u540d, \u540d\u4e49, \u540d\u8a89, \u6587\u4ef6\u540d",""],["five","\u4e94, \u4e94\u4e2a",""],["white","\u767d\u8272, \u6d01\u767d, \u773c\u767d, \u767d\u79cd\u4eba, \u86cb\u767d",""],["least","\u6700\u5c11, \u6700\u5c0f, \u6700\u5c0f\u9650\u5ea6",""],["president","\u603b\u7edf, \u603b\u88c1, \u8463\u4e8b\u957f, (\u5b66\u9662)\u9662\u957f, (\u5927\u5b66)\u6821\u957f,",""],["learn","\u5b66\u4e60\uff1b\u8ba4\u8bc6\u5230\uff1b\u5f97\u77e5",""],["real","\u771f\u7684, \u771f\u5b9e\u7684, \u5b9e\u9645\u7684, \u5b9e\u5728\u7684, \u4e0d\u52a8(\u4ea7)\u7684, \u5b9e",""],["team","\u961f, \u7ec4",""],["minute","\u5206, \u5206\u949f, \u7247\u523b, \u5907\u5fd8\u5f55, \u7b14\u8bb0",""],["best","\u6700\u597d\u7684",""],["several","\u51e0\u4e2a\u7684, \u4e00\u4e9b\u7684, \u5404\u81ea\u7684",""],["idea","\u4e3b\u610f, \u529e\u6cd5, \u7406\u60f3, \u601d\u60f3, \u6982\u5ff5, \u610f\u89c1",""],["body","\u8eab\u4f53, \u4eba, \u5c38\u4f53, \u4e3b\u8981\u90e8\u5206, \u56e2\u4f53",""],["information","\u6d88\u606f, \u77e5\u8bc6, \u901a\u77e5, \u60c5\u62a5, \u4fe1\u606f, \u95ee\u8baf\u5904, \u8d77\u8bc9",""],["nothing","\u65e0, \u4e0d\u5173\u7d27\u8981\u4e4b\u4e8b, \u96f6",""],["lead","\u94c5, \u94c5\u6761, \u9886\u5bfc, \u8d85\u524d\u91cf, \u9886\u5f15, \u699c\u6837, \u4e3b\u89d2, ",""],["social","\u793e\u4f1a\u7684, \u7fa4\u5c45\u7684, \u793e\u4ea4\u7684",""],["understand","\u7406\u89e3, \u4e86\u89e3, \u9886\u4f1a, \u542c\u8bf4, \u61c2",""],["whether","\u662f\u5426, \u4e0d\u8bba",""],["watch","\u89c2\u5bdf, \u624b\u8868, \u770b\u5b88, \u5b88\u62a4, \u76d1\u89c6, \u503c\u73ed\u4eba",""],["parent","\u7236\u6bcd, \u7236\u6bcd\u4eb2, \u6839\u6e90",""],["stop","\u505c\u6b62, \u8f66\u7ad9, \u9017\u7559, \u586b\u585e, \u969c\u788d, (\u98ce\u7434\u7684)\u97f3\u6813",""],["face","\u8138, \u9762\u5bb9, \u6b63\u9762, \u5916\u89c2",""],["create","\u521b\u9020, \u5efa\u9020, \u5f15\u8d77, \u4efb\u547d",""],["public","\u516c\u4f17, \u6c11\u4f17",""],["speak","\u8bf4, \u8bf4\u8bdd, \u6f14\u8bf4, \u53d1\u8a00",""],["others","\u5176\u4ed6\u4eba",""],["read","\u8bfb, \u9605\u8bfb, \u7406\u89e3",""],["level","\u6c34\u5e73, \u6c34\u51c6, \u5e73\u5730",""],["allow","\u5141\u8bb8, \u540c\u610f\u7ed9\u4e88, \u627f\u8ba4",""],["office","\u529e\u516c\u5ba4, \u90e8, \u516c\u804c, \u804c\u8d23",""],["spend","\u82b1\u8d39, \u6d6a\u8d39, \u5ea6\u8fc7, \u6d88\u8017, \u6d88\u78e8",""],["door","\u95e8",""],["health","\u5065\u5eb7, \u536b\u751f, \u84ec\u52c3, \u5065\u5eb7\u72b6\u6001",""],["person","\u4eba, \u4eba\u8eab, \u4eba\u79f0",""],["sure","\u786e\u4fe1, \u5fc5\u7136\u7684, \u5fc5\u5b9a\u7684",""],["history","\u5386\u53f2, \u8fc7\u53bb, \u7ecf\u5386, \u53d1\u5c55\u8fc7\u7a0b, \u5386\u53f2\u5b66, \u8fc7\u53bb\u7684\u4e8b,",""],["party","\u5bb4\u4f1a, \u515a, \u653f\u515a, \u56e2\u4f53, \u5f53\u4e8b\u4eba, \u805a\u4f1a",""],["within","\u5185\u90e8, \u91cc\u5934",""],["grow","\u79cd\u690d, \u4f7f\u957f\u6ee1",""],["result","\u7ed3\u679c, \u6210\u7ee9, \u7b54\u6848",""],["open","\u516c\u5f00, \u6237\u5916, \u7a7a\u65f7",""],["morning","\u65e9\u6668, \u65e9\u4e0a, \u521d\u671f",""],["walk","\u8d70, \u6563\u6b65, \u6b65\u884c, \u884c\u8d70\u7684\u8def\u7a0b, \u7ade\u8d70, \u6563\u6b65\u573a\u6240",""],["reason","\u7406\u7531, \u539f\u56e0, \u7406\u667a, \u9053\u7406, \u524d\u63d0, \u7406\u6027",""],["research","\u7814\u7a76, \u8c03\u67e5, \u8003\u5bdf",""],["girl","\u5973\u5b69, \u5c11\u5973, \u5973\u4f63",""],["food","\u98df\u7269, \u517b\u6599",""],["moment","\u7247\u523b, \u77ac\u95f4, \u91cd\u8981, \u9636\u6bb5, \u529b\u77e9",""],["teacher","\u6559\u5e08, \u8001\u5e08, \u5bfc\u5e08",""],["force","\u529b\u91cf, \u6b66\u529b, \u52bf\u529b, \u5f71\u54cd\u529b, \u519b\u961f, \u529b, \u6548\u529b",""],["offer","\u7ed9\u4e88(\u7269), \u51fa\u4ef7, \u63d0\u8bae, \u610f\u56fe, \u62a5\u4ef7",""],["education","\u6559\u80b2, \u8bad\u7ec3, \u6559\u80b2\u5b66",""],["across","\u8d8a\u8fc7, \u7a7f\u8fc7, \u4e0e",""],["remember","\u8bb0\u5f97, \u56de\u5fc6\u8d77, \u8bb0\u4f4f, \u94ed\u8bb0, \u7eaa\u5ff5",""],["foot","\u811a, \u6b65\u8c03, \u82f1\u5c3a, \u5e95\u90e8, \u672b\u5c3e, \u6b65\u5175",""],["second","\u79d2, \u77ac\u95f4, \u7b2c\u4e8c\u540d, \u652f\u6301\u8005, \u52a9\u624b",""],["maybe","\u4e5f\u8bb8, \u5927\u6982",""],["toward","\u5411, \u5bf9\u4e8e, \u4e3a\u4e86",""],["able","\u80fd\u5e72\u7684, \u80fd\u591f\u7684",""],["policy","\u653f\u7b56, \u65b9\u9488, \u7b56\u7565, \u4fdd\u9669\u5355",""],["everything","\u6bcf\u4ef6\u4e8b\u7269, \u6240\u6709\u4e8b\u7269",""],["love","\u7231, \u604b\u7231, \u7231\u60c5, \u7231\u597d, \u6027\u7231",""],["process","\u7a0b\u5e8f, \u8fdb\u884c, \u8fc7\u7a0b",""],["music","\u97f3\u4e50, \u4e50\u66f2",""],["including","\u5305\u542b, \u5305\u62ec",""],["consider","\u8003\u8651, \u601d\u8003, \u8ba4\u4e3a",""],["appear","\u51fa\u73b0, \u663e\u5f97, \u6765\u5230",""],["actually","\u4e8b\u5b9e\u4e0a, \u7adf\u7136, \u5982\u4eca, \u73b0\u5728",""],["probably","\u5927\u6982, \u6216\u8bb8",""],["human","\u4eba, \u4eba\u7c7b",""],["wait","\u7b49\u5f85, \u7b49\u5019",""],["serve","\u53ef\u4f5c",""],["send","\u53d1\u9001, \u4f7f\u8fdb\u5165, \u5bc4, \u6d3e\u9063, \u53d1\u5c04, \u4f7f\u9677\u4e8e",""],["expect","\u9884\u671f, \u76fc\u671b, \u671f\u5f85",""],["sense","\u611f\u5e94, \u611f\u89c9, \u611f\u5b98, \u610f\u8bc6, \u89c2\u5ff5, \u60c5\u7406, \u77e5\u89c9, ",""],["build","\u5efa\u7acb, \u5efa\u7b51",""],["stay","\u505c\u7559, \u9017\u7559, \u5236\u6b62, \u5ef6\u7f13, \u505c\u6b62, \u652f\u67f1, \u652f\u6491\u7269,",""],["fall","\u843d\u4e0b, \u7011\u5e03, \u91c7\u4f10\u91cf, \u4e0b\u964d, \u843d\u5dee, \u964d\u4f4e, \u5815\u843d,",""],["nation","\u56fd\u5bb6, \u6c11\u65cf",""],["plan","\u8ba1\u5212, \u65b9\u6848, \u7b56\u7565, \u65b9\u6cd5, \u8fdb\u5ea6\u8868, \u7a0b\u5e8f\u8868, \u5e73\u9762",""],["college","\u5b66\u9662, \u5927\u5b66, \u5b66\u4f1a",""],["interest","\u5174\u8da3, \u55dc\u597d, \u5229\u606f, \u5229\u76ca, \u7231\u597d, \u8da3\u5473, \u52bf\u529b",""],["death","\u6b7b\u4ea1",""],["course","\u8bfe\u7a0b, \u8def\u7ebf, \u8fc7\u7a0b, \u4e00\u9053\u83dc, \u9053\u8def",""],["someone","\u6709\u4eba, \u67d0\u4eba",""],["experience","\u7ecf\u5386, \u7ecf\u9a8c, \u4f53\u9a8c",""],["behind","\u5728\u540e\u5730",""],["reach","\u4f38\u51fa, \u5ef6\u4f38, \u533a\u57df, \u8303\u56f4, \u6d41\u57df, \u5cac",""],["kill","\u6740, \u6740\u622e, \u5c0f\u6cb3",""],["remain","\u4fdd\u6301, \u9017\u7559, \u5269\u4f59",""],["effect","\u7ed3\u679c, \u5f71\u54cd, \u6548\u679c, \u5370\u8c61",""],["yeah","(\u975e\u6b63\u5f0f)\u662f, \u662f\u7684",""],["class","\u73ed\u7ea7, \u9636\u7ea7, \u79cd\u7c7b, \u8bfe",""],["control","\u63a7\u5236, \u7ba1\u7406, \u514b\u5236, \u63a7\u5236\u5668, \u64cd\u7eb5\u88c5\u7f6e",""],["raise","\u4e0a\u5347, \u9ad8\u5730, \u589e\u9ad8",""],["care","\u5c0f\u5fc3, \u7167\u6599, \u5fe7\u8651",""],["perhaps","\u4e5f\u8bb8, \u5927\u6982",""],["late","\u8fdf\u7684, \u665a\u7684, \u5df2\u6545\u7684",""],["hard","\u575a\u786c\u7684, \u786c\u7684, \u96be\u7684, \u8270\u82e6\u7684, \u56f0\u96be\u7684, \u575a\u56fa\u7684, ",""],["field","\u9886\u57df, \u7530\u5730, \u573a\u5730, \u6218\u573a, \u573a, \u57df",""],["pass","\u7ecf\u8fc7, \u8981\u9698, \u9014\u5f84, \u901a\u884c, \u62a4\u7167, \u53ca\u683c",""],["former","\u4ece\u524d\u7684, \u524d\u8005\u7684",""],["sell","\u5356, \u80cc\u53db, \u9500\u552e, \u51fa\u5356",""],["major","\u4e3b\u4fee\u8bfe, \u6210\u5e74\u4eba, \u9646\u519b\u5c11\u6821",""],["sometimes","\u6709\u65f6, \u65f6\u5e38, \u5f80\u5f80",""],["development","\u53d1\u5c55",""],["report","\u62a5\u544a, \u62a5\u9053, \u4f20\u8bf4, \u6848\u60c5\u62a5\u544a, \u7206\u70b8\u58f0, \u6210\u7ee9\u5355",""],["role","\u89d2\u8272, \u804c\u8d23, \u4efb\u52a1",""],["better","\u8f83\u597d\u7684",""],["economic","\u7ecf\u6d4e\u4e0a\u7684, \u5b9e\u7528\u7684, \u8282\u7701\u7684",""],["effort","\u52aa\u529b, \u6210\u5c31",""],["decide","\u51b3\u5b9a, \u5224\u51b3",""],["rate","\u6bd4\u7387, \u7387, \u901f\u5ea6, \u4ef7\u683c, \u8d39\u7528, \u7b49\u7ea7",""],["strong","\u5f3a\u58ee\u7684, \u575a\u56fa\u7684, \u575a\u5f3a\u7684, \u5f3a\u70c8\u7684, \u6709\u529b\u7684, \u4f18\u826f\u7684",""],["possible","\u53ef\u80fd\u7684, \u6f5c\u5728\u7684, \u5408\u9002\u7684",""],["heart","\u5fc3, \u5fc3\u810f, \u4e2d\u5fc3, \u5185\u5fc3, \u611f\u60c5, \u7cbe\u795e, \u5fc3\u60c5, \u5b9d",""],["drug","\u836f, \u9ebb\u836f, \u9ebb\u9189\u836f",""],["leader","\u9886\u5bfc\u8005, \u793e\u8bba, \u6307\u6325, \u9886\u8896, \u9886\u5531\u8005, \u524d\u5bfc\u5b57\u7b26",""],["light","\u5149, \u5149\u4eae, \u706f, \u65e5\u5149, \u53d1\u5149\u4f53, \u5149\u6e90, \u6770\u51fa\u4eba\u7269,",""],["voice","\u58f0\u97f3, \u55d3\u97f3, \u55d3\u5b50, \u613f\u671b, \u53d1\u8a00\u6743, \u8868\u8fbe, \u5589\u820c,",""],["wife","\u59bb\u5b50, \u592a\u592a, \u592b\u4eba",""],["whole","\u5168\u90e8, \u5168\u4f53, \u6574\u4f53, \u5b8c\u5168\u4e4b\u4f53\u7cfb",""],["police","\u8b66\u5bdf, \u8b66\u5bdf\u5f53\u5c40, \u6cbb\u5b89",""],["mind","\u601d\u60f3, \u613f\u671b, \u667a\u529b, \u8bb0\u5fc6, \u5fc3\u7406, \u60c5\u7eea, \u7406\u667a, ",""],["finally","\u6700\u540e, \u7ec8\u4e8e",""],["pull","\u62c9, \u62d6, \u62d4, \u7275, \u6495\u5f00, \u5438\u5f15",""],["free","\u81ea\u7531\u7684, \u4eab\u53d7\u653f\u6cbb\u6743\u529b\u7684, \u5141\u8bb8\u7684, \u514d\u8d39\u7684, \u4e30\u5bcc\u7684",""],["military","\u519b\u961f",""],["price","\u4ef7\u683c, \u4ee3\u4ef7, \u4ef7\u503c",""],["less","\u8f83\u5c11, \u8f83\u5c0f",""],["according","\u76f8\u7b26\u7684, \u6839\u636e",""],["decision","\u51b3\u5b9a, \u51b3\u5fc3, \u51b3\u65ad",""],["explain","\u89e3\u91ca, \u8bf4\u660e",""],["hope","\u5e0c\u671b, \u4fe1\u5fc3, \u671f\u5f85",""],["develop","\u53d1\u5c55, \u4f7f\u53d1\u8fbe, \u8fdb\u6b65, \u6d17\u5370, \u663e\u5f71",""],["view","\u89c6\u91ce, \u98ce\u666f, \u89c1\u89e3, \u89c6\u529b, \u89c2\u770b, \u89c6\u56fe, \u6307\u671b, ",""],["relationship","\u5173\u7cfb, \u5173\u8054",""],["carry","\u8fdb\u4f4d, \u5c04\u7a0b, \u8fd0\u8f7d",""],["town","\u57ce\u9547, \u5e02, \u9547",""],["road","\u8def, \u9053\u8def, \u516c\u8def, \u9014\u5f84, \u65b9\u6cd5",""],["drive","\u9a7e\u8f66, \u5feb\u8f66\u9053, \u63a8\u8fdb\u529b, \u9a71\u52a8, \u52a8\u529b, \u51fb\u7403, \u9a71\u52a8",""],["true","\u771f\u5b9e\u7684, \u6b63\u786e\u7684, \u5fe0\u8bda\u7684, \u53ef\u9760\u7684, \u7eaf\u7cb9\u7684, \u6b63\u5f0f\u7684",""],["federal","\u8054\u90a6\u7684, \u8054\u5408\u7684, \u540c\u76df\u7684",""],["break","\u4f11\u606f, \u4e2d\u65ad, \u7834\u88c2\u5904, \u7edd\u4ea4, \u7834\u6653, \u7a81\u53d8",""],["difference","\u4e0d\u540c, \u5dee\u5f02",""],["receive","\u6536\u5230, \u63a5\u5230, \u5f97\u5230, \u63a5\u5f85, \u8fce\u63a5, \u627f\u53d7",""],["thank","\u8c22\u610f, \u611f\u8c22",""],["value","\u4ef7\u503c, \u4ef7\u683c, \u8d2d\u4e70\u529b, \u8bc4\u4ef7, \u4f30\u4ef7, \u8ba1\u7b97\u7ed3\u679c",""],["building","\u5efa\u7b51\u7269, \u5efa\u7b51",""],["action","\u884c\u52a8, \u6d3b\u52a8, \u52a8\u4f5c, \u4f5c\u7528, \u6218\u6597, \u884c\u4e3a, \u8bc9\u8bbc",""],["full","\u5168\u90e8, \u5b8c\u6574",""],["model","\u6a21\u578b, \u6a21\u8303, \u6a21\u7279\u513f",""],["join","\u53c2\u52a0, \u7ed3\u5408, \u52a0\u5165",""],["season","\u5b63\u8282, \u65f6\u8282, \u5f53\u4ee4\u671f, \u65f6\u671f",""],["society","\u793e\u4f1a\uff1b\u793e\u4ea4\u754c\uff1b\u4ea4\u5f80\uff1b\u793e\u56e2",""],["director","\u4e3b\u7ba1, \u5bfc\u6f14, \u8463\u4e8b",""],["position","\u4f4d\u7f6e, \u5730\u4f4d, \u8eab\u5206, \u5f62\u52bf, \u59ff\u52bf, \u7acb\u573a, \u804c\u4f4d, ",""],["player","\u7ade\u8d5b\u8005, \u4e0a\u573a\u961f\u5458, \u6e38\u620f\u8005, \u6f14\u5458",""],["agree","\u540c\u610f, \u8d5e\u6210, \u5e94\u5141, \u9002\u5408",""],["especially","\u5c24\u5176, \u7279\u522b, \u683c\u5916",""],["record","\u8bb0\u5f55, \u5c65\u5386, \u6863\u6848, \u5ba1\u5224\u8bb0\u5f55, \u6700\u9ad8\u7eaa\u5f55, \u5531\u7247",""],["pick","\u7cbe\u9009, \u9009\u62e9, \u6398, \u7cbe\u534e, \u7259\u7b7e, \u9e64\u5634\u9504",""],["wear","\u7a7f\u7740, \u6234, \u4f7f\u7528, \u8017\u635f, \u670d\u88c5, \u8010\u4e45\u6027",""],["paper","\u7eb8, \u6587\u4ef6, \u6587\u7ae0, \u62a5\u7eb8, \u8bc1\u5238, \u8bc1\u4ef6",""],["special","\u4e13\u8f91, \u4e13\u8f66, \u53f7\u5916, \u7279\u522b\u7684\u4e1c\u897f, \u8d1f\u6709\u7279\u522b\u4efb\u52a1\u7684\u4eba\u5458",""],["space","\u4f4d\u7f6e, \u7a7a\u95f4, \u8ddd\u79bb, \u592a\u7a7a, \u7a7a\u767d, \u95f4\u9694, (\u671f\u520a\u7b49",""],["ground","\u571f\u5730, \u6218\u573a, \u573a\u5730, \u5730\u9762, \u8303\u56f4",""],["form","\u5f62\u72b6, \u5f62\u4f53, \u7c7b\u578b, \u65b9\u5f0f, \u8868\u683c, \u5f62\u5f0f",""],["event","\u4e8b\u4ef6, \u7ed3\u679c, \u4e8b\u60c5\u7684\u8fdb\u7a0b, \u7ade\u8d5b\u9879\u76ee",""],["official","\u5b98\u5458, \u516c\u52a1\u5458, \u804c\u5458",""],["whose","\u8c01\u7684",""],["matter","\u4e8b\u4ef6, \u7269\u8d28, \u539f\u56e0, \u7d20\u6750, \u5b9e\u4f53, \u91cd\u8981",""],["everyone","\u6bcf\u4e2a\u4eba, \u4eba\u4eba",""],["center","\u4e2d\u5fc3, \u4e2d\u5fc3\u70b9, \u4e2d\u950b",""],["couple","\u5bf9, \u592b\u5987, \u6570\u4e2a",""],["site","\u4f4d\u7f6e, \u573a\u6240, \u5730\u70b9",""],["project","\u8ba1\u5212, \u8bbe\u8ba1, \u4e8b\u4e1a",""],["base","\u5e95\u90e8, \u5792, \u57fa\u7840, \u57fa\u5730",""],["activity","\u6d3b\u52a8, \u884c\u52a8, \u6d3b\u8dc3, \u6d3b\u529b",""],["star","\u661f, \u6052\u661f, \u661f\u5f62\u7269, \u8fd0\u6c14, \u660e\u661f",""],["table","\u684c\u5b50, \u9910\u684c, \u5de5\u4f5c\u53f0, \u94ed\u6587, \u8868\u683c, \u8868, \u9ad8\u539f, ",""],["court","\u6cd5\u9662, \u5ead\u9662, \u5949\u627f",""],["produce","\u751f\u4ea7\u54c1, \u7269\u4ea7, \u540e\u4ee3",""],["teach","\u6559, \u8bb2\u6388, \u6559\u5bfc, \u6559\u80b2",""],["half","\u4e00\u534a, \u534a\u573a, \u4e0d\u5b8c\u5168",""],["situation","\u60c5\u5f62, \u5883\u9047, \u4f4d\u7f6e",""],["easy","\u5bb9\u6613\u7684, \u7f13\u7f13\u7684, \u8212\u9002\u7684, \u4ece\u5bb9\u7684, \u5bbd\u5bb9\u7684, \u6d41\u7545\u7684",""],["cost","\u4ee3\u4ef7, \u4ef7\u503c, \u8d39\u7528",""],["industry","\u52e4\u52b3, \u5de5\u4e1a, \u4f01\u4e1a, \u4ea7\u4e1a, \u6709\u7ec4\u7ec7\u7684\u52b3\u52a8",""],["figure","\u6570\u5b57, \u4ef7\u683c, \u56fe\u5f62, \u5f62\u72b6",""],["street","\u8857\u9053, \u9a6c\u8def, \u8857\u533a",""],["image","\u5f71\u50cf, \u8096\u50cf, \u60f3\u8c61, \u56fe\u50cf, \u5f62\u8c61, \u7ffb\u7248",""],["cover","\u76d6\u5b50, \u5c01\u9762, \u85c9\u53e3",""],["quite","\u76f8\u5f53, \u5b8c\u5168, \u5341\u5206",""],["picture","\u56fe\u753b, \u7167\u7247, \u666f\u8272, \u7f8e\u4e3d\u5982\u753b\u7684\u4eba(\u6216\u7269), \u5316\u8eab, ",""],["clear","\u6e05\u695a\u7684, \u660e\u786e\u7684, \u6f84\u6e05\u7684",""],["piece","\u5757, \u7247, \u7bc7, \u788e\u7247, \u90e8\u5206, \u90e8\u4ef6, \u6807\u51c6\u91cf",""],["land","\u9646\u5730, \u5730\u9762, \u5730\u754c, \u5730\u4ea7, \u56fd\u571f, \u571f\u5730",""],["recent","\u6700\u8fd1\u7684, \u8fd1\u4ee3\u7684, \u6700\u65b0\u7684",""],["describe","\u63cf\u8ff0, \u63cf\u7ed8, \u753b",""],["product","\u4ea7\u54c1, \u7ed3\u679c, \u4e58\u79ef",""],["doctor","\u533b\u751f, \u535a\u58eb",""],["wall","\u5899, \u5899\u58c1, \u57a3, \u5185\u58c1, \u5206\u754c\u7269, \u5c4f\u969c",""],["patient","\u75c5\u4eba, \u627f\u53d7\u8005",""],["worker","\u5de5\u4eba, \u52b3\u52a8\u8005",""],["news","\u65b0\u95fb, \u6d88\u606f, \u62a5\u5bfc",""],["test","\u6d4b\u8bd5, \u8bd5\u9a8c, \u5316\u9a8c, \u68c0\u9a8c, \u8003\u9a8c, \u7532\u58f3",""],["movie","\u7535\u5f71",""],["certain","\u786e\u5b9a\u7684, \u67d0\u4e00\u4e2a\u7684, \u5fc5\u7136\u7684",""],["north","\u5317\u65b9, \u5317",""],["personal","\u79c1\u4eba\u7684, \u6d89\u53ca\u9690\u79c1\u7684, \u6709\u4eba\u6027\u7684, \u4eba\u79f0\u7684, \u4eb2\u81ea\u7684, ",""],["simply","\u7b80\u5355\u5730, \u53ea\u662f, \u7b80\u76f4, \u7b80\u6734\u5730, \u5766\u767d\u5730",""],["third","\u7b2c\u4e09, \u4e09\u5206\u4e4b\u4e00",""],["technology","\u6280\u672f, \u5de5\u4e1a\u6280\u672f, \u672f\u8bed",""],["catch","\u6355\u6349, \u9677\u9631, \u6355\u6349\u4e4b\u7269, \u6293, \u62c9\u624b",""],["step","\u6b65\u9aa4, \u6b65, \u6b65\u5e45, \u811a\u6b65\u58f0, \u8e0f\u7ea7, \u6b65\u4f10, \u77ed\u8ddd\u79bb,",""],["baby","\u5a74\u5b69",""],["computer","\u7535\u8111, \u7535\u5b50\u8ba1\u7b97\u673a",""],["type","\u7c7b\u578b, \u6837\u5f0f, \u5178\u578b, \u699c\u6837, \u6807\u5fd7, \u7b26\u53f7, \u578b, \u5f0f",""],["attention","\u6ce8\u610f, \u6ce8\u610f\u529b",""],["draw","\u62c9, \u62d6, \u62d4\u5251",""],["film","\u8f6f\u7247, \u8584\u819c, \u80f6\u5377, \u7535\u5f71",""],["republican","\u5171\u548c\u4e3b\u4e49\u8005, \u5171\u548c\u515a\u5458",""],["organization","\u7ec4\u7ec7, \u7ed3\u6784, \u56e2\u4f53, \u4f53\u5236",""],["tree","\u6811, \u6728\u6599, \u6811\u72b6\u7269",""],["nearly","\u51e0\u4e4e, \u5bc6\u5207\u5730",""],["cause","\u539f\u56e0, \u76ee\u6807",""],["hair","\u5934\u53d1, \u6bdb\u53d1, \u4e9b\u5fae",""],["century","\u4e16\u7eaa, \u767e\u5e74",""],["window","\u7a97\u6237, \u7a97\u5b50, \u7a97\u53e3",""],["difficult","\u56f0\u96be\u7684",""]];
+BANKS.online=ONLINE_BANK;
+
+/* ===== 本地存储（容错读写） ===== */
+const store={
+  read(key,fb){try{const v=JSON.parse(localStorage.getItem(key));return v==null?fb:v}catch(_){return fb}},
+  write(key,v){try{localStorage.setItem(key,JSON.stringify(v))}catch(_){}}
+};
+
+/* ===== 状态 ===== */
+const state={deck:[],index:0,score:0,streak:0,correct:0,answered:0,hearts:3,maxTime:20,deadline:0,timer:null,running:false,paused:false,mode:'challenge',current:null,enemyHp:100,enemyMax:100};
+const saved=store.read('spellRushProgress',{learned:0,days:1,seen:[]});
+const $=id=>document.getElementById(id);
+
+/* ===== 音效（Web Audio 合成，无需音频文件） ===== */
+const sfx={
+  enabled:true,ctx:null,
+  ensure(){if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(_){}}return this.ctx},
+  tone(f,dur,type,vol,when){const c=this.ensure();if(!c||!this.enabled)return;const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;const t=c.currentTime+(when||0);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.08,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.05)},
+  correct(){this.tone(523.25,.12);this.tone(783.99,.16,'sine',.08,.09)},
+  wrong(){this.tone(196,.22,'triangle',.09)},
+  over(){this.tone(329.63,.28,'sine',.07);this.tone(261.63,.5,'sine',.07,.26)}
+};
+
+/* ===== 工具函数 ===== */
+function shuffle(a){return[...a].sort(()=>Math.random()-.5)}
+function parseCustom(){return $('customWords').value.split(/\n/).map(x=>x.trim()).filter(Boolean).map(line=>{const p=line.split(/[|｜\t;,，]/).map(x=>x.trim());return[p[0].toLowerCase(),p[1]||'自定义词汇','']}).filter(x=>/^[a-z][a-z' -]*$/i.test(x[0]))}
+function bank(){return $('preset').value==='custom'?parseCustom():BANKS[$('preset').value]}
+function toast(t){$('toast').textContent=t;$('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),1900)}
+function pushSeen(word,ok){
+  saved.seen=saved.seen||[];
+  saved.seen.push({word,ok,ts:Date.now()});
+  if(saved.seen.length>1500)saved.seen=saved.seen.slice(-1500);
+}
+function patternHtml(w,filled){return w.split('').map((c,i)=>{const isSpace=c===' ';const cls=i===0?'ch first':(isSpace?'ch space':'ch'+(filled?' fill':' blank'));return '<span class="'+cls+'">'+(isSpace?'&nbsp;':(i===0?c:'_'))+'</span>'}).join('')}
+function shieldHtml(n){let s='';for(let i=0;i<3;i++){const cls='shield'+(i<n?' on':' off');s+='<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.2 8.6-8 11-4.8-2.4-8-6-8-11V5z"/></svg>'}return '<span class="shields">'+s+'</span>'}
+function floatScore(anchor,text){const el=document.createElement('div');el.className='float-score';el.textContent=text;const r=anchor.getBoundingClientRect();el.style.left=Math.max(8,Math.min(innerWidth-60,r.left+r.width/2-40))+'px';el.style.top=(r.top+8)+'px';document.body.appendChild(el);requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('fly')));setTimeout(()=>el.remove(),850)}
+function impactBurst(anchor){const host=$('gamePanel'),hr=host.getBoundingClientRect(),r=anchor.getBoundingClientRect();const el=document.createElement('span');el.className='impact-ring';el.style.left=(r.left-hr.left+r.width/2)+'px';el.style.top=(r.top-hr.top+r.height/2)+'px';host.appendChild(el);setTimeout(()=>el.remove(),700)}
+function gameShake(){const g=$('gamePanel');g.classList.remove('wrong');void g.offsetWidth;g.classList.add('wrong');setTimeout(()=>g.classList.remove('wrong'),400)}
+function setEnabled(on){['answer','submit','speak','skip'].forEach(id=>$(id).disabled=!on)}
+function bankCount(){const b=bank();const el=$('bankCount');el.textContent='当前词库 '+b.length+' 词';el.classList.toggle('warn',b.length<3)}
+function enemyFor(round){
+  const enemies=[['词语史莱姆',190],['迷雾蝙蝠',262],['拼写哥布林',48],['语法幽灵',310],['词源巨像',125],['Boss · 遗忘魔王',0]];
+  const boss=round===10, item=boss?enemies[5]:enemies[(round-1)%5];
+  return {name:item[0],hue:item[1],max:boss?150:100+Math.floor((round-1)/3)*10,boss};
+}
+function renderBattle(){
+  const e=enemyFor(Math.min(10,state.index+1));
+  const hp=Math.max(0,Math.min(100,state.enemyHp/state.enemyMax*100));
+  $('enemyName').textContent=e.name;
+  const av=$('enemyAvatar');
+  av.innerHTML='<img class="avatar-art" src="assets-enemy.png" alt="'+e.name+'">';
+  av.style.filter=e.boss?'brightness(1.15) saturate(1.25)':'hue-rotate('+e.hue+'deg) saturate(1.15)';
+  av.style.boxShadow=e.boss?'0 0 30px #ff6b8188,0 0 60px #ff6b8144':'';
+  $('enemyMeta').textContent=(e.boss?'精英首领':'Lv.'+Math.max(1,Math.ceil((state.index+1)/2)))+' · '+(e.boss?'击败它，赢取额外奖励':'词语幻兽');
+  $('enemyHp').style.width=hp+'%';
+  $('heroHp').style.width=Math.max(0,state.hearts/3*100)+'%';
+  $('heroMeta').textContent='能量 '+Math.min(999,state.streak*10)+' · 连击加成';
+  $('roundProgress').innerHTML=Array.from({length:10},(_,i)=>'<i class="'+(i<state.index?'on':'')+(i===state.index?' on':'')+'"></i>').join('');
+}
+function damagePop(text){
+  const el=document.createElement('div');el.className='damage-pop';el.textContent=text;
+  $('gamePanel').appendChild(el);setTimeout(()=>el.remove(),780);
+}
+function enemyHit(){
+  const a=$('enemyAvatar');a.classList.remove('enemy-hit');void a.offsetWidth;a.classList.add('enemy-hit');impactBurst(a);
+}
+
+/* ===== UI 更新 ===== */
+function stats(){
+  $('round').textContent=state.running?((state.mode==='review'?'复习 ':'第 ')+(state.index+1)+'/10'):'—';
+  $('score').textContent=state.score;
+  $('streak').textContent=state.streak;
+  $('streak').classList.toggle('streak-hot',state.streak>=3);
+  $('accuracy').textContent=state.answered?Math.round(state.correct/state.answered*100)+'%':'—';
+  $('hearts').innerHTML=shieldHtml(state.hearts);
+  $('pauseTxt').textContent=state.paused?'继续':'暂停';
+  $('pause').disabled=!state.running;
+}
+function timerBar(){
+  const p=Math.max(0,Math.min(100,state.time/state.maxTime*100));
+  const bar=$('timerBar');
+  bar.style.width=p+'%';
+  bar.style.background=p<30?'linear-gradient(90deg,#ff6b81,#ffc857)':'linear-gradient(90deg,#5ee6a0,#3ee0f5)';
+  $('timer').classList.toggle('urgent',p<30&&state.running&&!state.paused);
+}
+function updateReviewUI(){
+  $('learned').textContent=saved.learned||0;
+  $('days').textContent=(saved.days||1)+'/21';
+  $('reviewBar').style.width=Math.min(100,(saved.days||1)/21*100)+'%';
+}
+
+/* ===== 游戏流程 ===== */
+function question(){
+  if(!state.running)return;
+  if(state.index>=10||!state.deck.length)return finish();
+  state.current=state.deck[state.index%state.deck.length];
+  const enemy=enemyFor(state.index+1);
+  state.enemyMax=enemy.max;state.enemyHp=enemy.max;
+  const r=state.index+1;
+  state.maxTime=r>=10?12:r>=7?15:20;
+  state.time=state.maxTime;
+  state.deadline=Date.now()+state.maxTime*1000;
+  $('tag').textContent=(state.mode==='review'?'复习 · ':'第 '+(state.index+1)+' 回合 · ')+'拼写目标';
+  $('meaning').textContent=state.current[1];
+  $('sentence').textContent=state.current[2]||'输入你记得的拼写，答对即可得分。';
+  $('pattern').innerHTML=patternHtml(state.current[0]);
+  $('answer').value='';
+  $('feedback').className='feedback';$('feedback').textContent='';
+  const promptEl=document.querySelector('.prompt');promptEl.classList.remove('question-enter');void promptEl.offsetWidth;promptEl.classList.add('question-enter');
+  const battleEl=document.querySelector('.battle-strip');battleEl.classList.remove('battle-enter');void battleEl.offsetWidth;battleEl.classList.add('battle-enter');
+  setEnabled(true);
+  $('status').textContent=state.mode==='review'?'复习薄弱词：答对后会降低它的复习优先级':'输入单词并按 Enter 提交';
+  $('battleLog').textContent=enemy.boss?'Boss 回合：答对这个单词，给它致命一击！':(state.streak>=3?'连击已启动：保持节奏，伤害会越来越高。':'先看释义，再用拼写发动攻击。');
+  stats();renderBattle();timerBar();
+  clearInterval(state.timer);
+  state.timer=setInterval(tick,200);
+  $('answer').focus();
+}
+function tick(){
+  if(state.paused)return;
+  const left=(state.deadline-Date.now())/1000;
+  if(left<=0){state.time=0;timerBar();clearInterval(state.timer);resolve(false,'时间到，正确答案是 '+state.current[0]);return}
+  state.time=left;timerBar();
+}
+function calcGain(){return 100+Math.min(100,state.streak*10)}
+function resolve(ok,msg){
+  if(!state.running)return;
+  clearInterval(state.timer);
+  state.answered++;
+  saved.seen=saved.seen||[];
+  if(ok){
+    const gain=calcGain();
+    const damage=Math.min(state.enemyMax,24+state.streak*7);
+    state.correct++;state.streak++;state.score+=gain;
+    state.enemyHp=Math.max(0,state.enemyHp-damage);
+    pushSeen(state.current[0],true);
+    $('feedback').className='feedback good';
+    $('feedback').textContent='✓ '+msg+'  +'+gain;
+    $('pattern').innerHTML=patternHtml(state.current[0],true);
+    $('battleLog').textContent='命中！ '+state.current[0]+' 造成 '+damage+' 点伤害。';
+    $('gamePanel').classList.remove('correct');void $('gamePanel').offsetWidth;$('gamePanel').classList.add('correct');
+    setTimeout(()=>$('gamePanel').classList.remove('correct'),560);
+    damagePop('-'+damage);enemyHit();renderBattle();sfx.correct();floatScore($('gamePanel'),'+'+gain);
+  }else{
+    state.streak=0;state.hearts--;
+    pushSeen(state.current[0],false);
+    (state.misses=state.misses||[]).push({word:state.current[0],meaning:state.current[1]});
+    $('feedback').className='feedback bad';
+    $('feedback').textContent='✗ '+msg;
+    $('battleLog').textContent='敌人反击了！先稳住节奏，下一题重新起势。';
+    renderBattle();sfx.wrong();gameShake();
+  }
+  store.write('spellRushProgress',saved);
+  setEnabled(false);
+  stats();updateReviewUI();renderBattle();
+  if(state.hearts<=0){setTimeout(finish,950);return}
+  if(state.index+1>=10){setTimeout(finish,950);return}
+  state.index++;
+  setTimeout(question,950);
+}
+function finish(){
+  clearInterval(state.timer);
+  state.running=false;state.paused=false;
+  setEnabled(false);
+  $('pauseTxt').textContent='暂停';
+  const pct=state.answered?Math.round(state.correct/state.answered*100):0;
+  const gained=state.correct;
+  saved.learned=Math.min(9999,(saved.learned||0)+gained);
+  saved.days=Math.min(21,(saved.days||1)+(gained>=6?1:0));
+  store.write('spellRushProgress',saved);
+  updateReviewUI();
+  $('endTitle').textContent=state.mode==='review'?'复习完成':(state.hearts?'本局完成':'护盾耗尽');
+  $('endScore').textContent=state.score;
+  $('endText').textContent='正确 '+state.correct+'/'+state.answered+' · 正确率 '+pct+'%';
+  const misses=(state.misses||[]).slice(-8).reverse();
+  $('missList').innerHTML=misses.length
+    ?'<div class="miss-head">本局错题 · 点击可听发音</div>'+misses.map(m=>'<div class="miss-item" data-w="'+m.word+'"><b>'+m.word+'</b><span>'+m.meaning+'</span></div>').join('')
+    :'<div class="miss-head">本局全对，没有错题</div>';
+  $('battleLog').textContent=state.hearts?'遭遇战完成！你的词汇之旅还在继续。':'护盾耗尽：复盘错题，再来挑战。';
+  $('endOverlay').classList.add('show');
+  $('gamePanel').classList.remove('paused');
+  stats();sfx.over();
+}
+function begin(mode){
+  let b=bank();
+  if(mode==='review'){const seen=saved.seen||[];const weak=b.filter(w=>{const h=seen.filter(x=>x.word===w[0]);return !h.length||h[h.length-1].ok===false});if(weak.length>=3)b=weak}
+  if(b.length<3){toast(mode==='review'?'暂无薄弱词，先完成一局挑战吧':'自定义词库至少需要 3 个有效单词');return}
+  Object.assign(state,{deck:shuffle(b),index:0,score:0,streak:0,correct:0,answered:0,hearts:3,misses:[],running:true,paused:false,mode,enemyHp:100,enemyMax:100});
+  $('endOverlay').classList.remove('show');
+  question();
+}
+function submit(){
+  if(!state.running||state.paused||!state.current||$('answer').disabled)return;
+  const v=$('answer').value.trim().toLowerCase().replace(/\s+/g,' ');
+  if(!v){toast('先输入答案');return}
+  resolve(v===state.current[0].toLowerCase(),'正确答案：'+state.current[0]);
+}
+
+/* ===== 词云 ===== */
+function refreshCloud(){
+  const words=bank().slice(0,24);
+  const seen=saved.seen||[];
+  $('wordcloud').innerHTML=words.map((w,i)=>{
+    const hits=seen.filter(x=>x.word===w[0]);
+    const bad=hits.filter(x=>!x.ok).length;
+    const good=hits.filter(x=>x.ok).length;
+    const cls=bad?'weak':good>=2?'mastered':'new';
+    const size=13+Math.min(13,bad*4+(i%4));
+    return '<span class="'+cls+'" style="font-size:'+size+'px" data-word="'+w[0]+'" title="'+w[1]+'">'+w[0]+'</span>';
+  }).join('')||'<span>暂无有效单词，先去词库里加几个吧</span>';
+  bankCount();
+}
+
+/* ===== 事件绑定 ===== */
+$('start').onclick=()=>{sfx.ensure();begin('challenge')};
+$('reviewStart').onclick=()=>begin('review');
+$('submit').onclick=submit;
+$('answer').addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
+$('skip').onclick=()=>{if(state.running)resolve(false,'已跳过，正确答案是 '+state.current[0])};
+$('speak').onclick=()=>{
+  const w=state.current?state.current[0]:null;
+  if(!w||!('speechSynthesis'in window))return;
+  const u=new SpeechSynthesisUtterance(w);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+};
+$('pause').onclick=()=>{
+  if(!state.running)return;
+  state.paused=!state.paused;
+  $('answer').disabled=state.paused;
+  $('submit').disabled=state.paused;
+  $('speak').disabled=state.paused;
+  $('skip').disabled=state.paused;
+  $('status').textContent=state.paused?'已暂停，点击「继续」恢复':'输入单词并按 Enter 提交';
+  $('gamePanel').classList.toggle('paused',state.paused);
+  stats();
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&state.running&&!$('endOverlay').classList.contains('show')&&!$('helpOverlay').classList.contains('show'))$('pause').click();
+});
+$('saveWords').onclick=()=>{store.write('spellRushWords',$('customWords').value);toast('自定义词库已保存');refreshCloud()};
+$('wordFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let t=rd.result;
+    if(f.name.toLowerCase().endsWith('.json')){
+      try{const j=JSON.parse(t);t=(Array.isArray(j)?j:j.words||[]).map(x=>Array.isArray(x)?x.join('｜'):String(x)).join('\n')}catch(_){toast('JSON 文件格式无法解析');return}
+    }
+    $('customWords').value=t;
+    store.write('spellRushWords',t);
+    $('preset').value='custom';
+    toast('已导入 '+f.name);
+    refreshCloud();
+  };
+  rd.readAsText(f);
+};
+$('preset').onchange=()=>{if($('preset').value==='custom')$('status').textContent='已切换到自定义词库，请先保存或编辑右侧词表';refreshCloud()};
+$('refreshCloud').onclick=refreshCloud;
+$('wordcloud').addEventListener('click',e=>{
+  const w=e.target.closest('span[data-word]');
+  if(!w||!('speechSynthesis'in window))return;
+  const u=new SpeechSynthesisUtterance(w.dataset.word);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+});
+$('restart').onclick=()=>{$('endOverlay').classList.remove('show');begin('challenge')};
+$('soundToggle').onchange=e=>{sfx.enabled=e.target.checked;if(sfx.enabled)sfx.correct()};
+$('help').onclick=()=>{if(state.running&&!state.paused)$('pause').click();$('helpOverlay').classList.add('show')};
+$('helpClose').onclick=()=>{store.write('spellRushHelpSeen',1);$('helpOverlay').classList.remove('show')};
+$('missList').addEventListener('click',e=>{
+  const b=e.target.closest('.miss-item');
+  if(!b||!('speechSynthesis'in window))return;
+  const u=new SpeechSynthesisUtterance(b.dataset.w);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+});
+
+/* ===== 初始化 ===== */
+const customSaved=localStorage.getItem('spellRushWords');
+if(customSaved)$('customWords').value=customSaved;
+refreshCloud();updateReviewUI();stats();
+if(!store.read('spellRushHelpSeen',0))setTimeout(()=>$('helpOverlay').classList.add('show'),500);
+</script>
+</body></html>
