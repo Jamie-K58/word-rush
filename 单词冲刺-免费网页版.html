@@ -635,6 +635,37 @@ function refreshCloud(){
   bankCount();
 }
 
+/* ===== 发音（手机兼容：在线音频 + 系统语音兜底） ===== */
+let pronunciationAudio=null;
+function speakWithSystem(word){
+  if(!word||!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window))return false;
+  try{
+    const synth=window.speechSynthesis;
+    synth.cancel();
+    synth.resume();
+    const u=new SpeechSynthesisUtterance(word);
+    u.lang='en-US';u.rate=.9;u.pitch=1;
+    const voices=synth.getVoices();
+    const voice=voices.find(v=>/^en(-|_)/i.test(v.lang));
+    if(voice)u.voice=voice;
+    synth.speak(u);
+    return true;
+  }catch(_){return false}
+}
+function speakWord(word){
+  word=String(word||'').trim();
+  if(!word)return false;
+  try{
+    if(pronunciationAudio){pronunciationAudio.pause();pronunciationAudio.currentTime=0}
+    const audio=new Audio('https://dict.youdao.com/dictvoice?audio='+encodeURIComponent(word)+'&type=2');
+    pronunciationAudio=audio;audio.preload='auto';
+    audio.onerror=()=>speakWithSystem(word);
+    const result=audio.play();
+    if(result&&typeof result.catch==='function')result.catch(()=>speakWithSystem(word));
+    return true;
+  }catch(_){return speakWithSystem(word)}
+}
+
 /* ===== 事件绑定 ===== */
 $('start').onclick=()=>{sfx.ensure();begin('challenge')};
 $('reviewStart').onclick=()=>begin('review');
@@ -643,8 +674,7 @@ $('answer').addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
 $('skip').onclick=()=>{if(state.running)resolve(false,'已跳过，正确答案是 '+state.current[0])};
 $('speak').onclick=()=>{
   const w=state.current?state.current[0]:null;
-  if(!w||!('speechSynthesis'in window))return;
-  const u=new SpeechSynthesisUtterance(w);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+  speakWord(w);
 };
 $('pause').onclick=()=>{
   if(!state.running)return;
@@ -681,8 +711,8 @@ $('preset').onchange=()=>{if($('preset').value==='custom')$('status').textConten
 $('refreshCloud').onclick=refreshCloud;
 $('wordcloud').addEventListener('click',e=>{
   const w=e.target.closest('span[data-word]');
-  if(!w||!('speechSynthesis'in window))return;
-  const u=new SpeechSynthesisUtterance(w.dataset.word);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+  if(!w)return;
+  speakWord(w.dataset.word);
 });
 $('restart').onclick=()=>{$('endOverlay').classList.remove('show');begin('challenge')};
 $('soundToggle').onchange=e=>{sfx.enabled=e.target.checked;if(sfx.enabled)sfx.correct()};
@@ -690,8 +720,8 @@ $('help').onclick=()=>{if(state.running&&!state.paused)$('pause').click();$('hel
 $('helpClose').onclick=()=>{store.write('spellRushHelpSeen',1);$('helpOverlay').classList.remove('show')};
 $('missList').addEventListener('click',e=>{
   const b=e.target.closest('.miss-item');
-  if(!b||!('speechSynthesis'in window))return;
-  const u=new SpeechSynthesisUtterance(b.dataset.w);u.lang='en-US';speechSynthesis.cancel();speechSynthesis.speak(u);
+  if(!b)return;
+  speakWord(b.dataset.w);
 });
 
 /* ===== 初始化 ===== */
