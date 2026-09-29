@@ -728,6 +728,6 @@ $('missList').addEventListener('click',e=>{
 const customSaved=localStorage.getItem('spellRushWords');
 if(customSaved)$('customWords').value=customSaved;
 refreshCloud();updateReviewUI();stats();
-if(!store.read('spellRushHelpSeen',0))setTimeout(()=>$('helpOverlay').classList.add('show'),500);
+// 首次打开不自动遮挡开始按钮；需要时可点击“帮助”查看玩法。
 </script>
 </body></html>
