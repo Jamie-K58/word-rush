@@ -28,6 +28,7 @@ body::after{content:"";position:fixed;inset:-15%;pointer-events:none;opacity:.35
 @keyframes aurora{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(2%,-2%,0) scale(1.08)}}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer;border:0;color:var(--text);background:none}
+button:disabled{opacity:.52;cursor:not-allowed;filter:saturate(.7)}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:4px}
 .app{max-width:1160px;margin:auto;padding:24px;position:relative;z-index:1}
 .brand{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
@@ -149,6 +150,7 @@ textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
 .mini span{color:var(--muted);font-size:12.5px}
 .progress{background:#061722;height:9px;border-radius:99px;overflow:hidden;margin-top:8px}
 .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--green));transition:width .3s}
+.habit-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;color:var(--muted);font-size:12.5px}.habit-line b{color:var(--amber);font-weight:800}
 .tip{color:var(--muted);font-size:13px;line-height:1.65;margin:0}
 .tip code{background:#0a1c2a;border:1px solid #234a5c;padding:1px 5px;border-radius:6px;font-size:11.5px}
 .file{font-size:11.5px;color:var(--muted);width:100%;margin-top:8px}
@@ -192,15 +194,15 @@ textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
 @keyframes correctFlash{0%{box-shadow:var(--shadow)}30%{box-shadow:var(--shadow),0 0 0 3px #5ee6a044,0 0 40px #5ee6a033}100%{box-shadow:var(--shadow)}}
 .impact-ring{position:absolute;width:154px;height:154px;border:0;border-radius:50%;pointer-events:none;z-index:4;background:url('assets-skill-impact.png') center/contain no-repeat;mix-blend-mode:screen;animation:impactRing .62s var(--ease) forwards}
 @keyframes impactRing{from{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-10deg)}35%{opacity:1}to{opacity:0;transform:translate(-50%,-50%) scale(1.18) rotate(12deg)}}
-@media(max-width:820px){.layout{grid-template-columns:1fr}.game{min-height:560px}.stats{grid-template-columns:repeat(3,1fr)}.stats .stat:nth-child(4),.stats .stat:nth-child(5){display:none}}
-@media(max-width:520px){.app{padding:14px}.brand{flex-direction:column;align-items:flex-start}.game,.side{padding:14px}.input-row{flex-direction:column}.primary{padding:12px}.pattern{gap:.05em;letter-spacing:.02em}.bottom-row{flex-direction:column;align-items:flex-start;gap:12px}.battle-strip{gap:7px;padding:10px 8px}.avatar{width:48px;height:48px;font-size:17px}.hero .avatar-art{transform:scale(1.15) translateY(3px)}.enemy .avatar-art{transform:scale(1.1)}.combatant{gap:6px}.combatant strong{font-size:11px}.versus{font-size:9px;padding:6px 5px}.hp-wrap{width:82px}}
+@media(max-width:820px){.layout{display:flex;flex-direction:column}.side{order:-1}.game{order:2;min-height:560px}.stats{display:flex;overflow-x:auto;gap:8px;padding-bottom:3px;scrollbar-width:thin}.stats .stat{flex:0 0 96px}.stats .stat:nth-child(4),.stats .stat:nth-child(5){display:block}}
+@media(max-width:520px){.app{padding:14px}.brand{flex-direction:column;align-items:flex-start}.game,.side{padding:14px}.input-row{flex-direction:row;align-items:stretch}.input-row .primary{flex:0 0 82px;padding:12px 8px}.primary{padding:12px}.pattern{gap:.05em;letter-spacing:.02em}.bottom-row{flex-direction:column;align-items:stretch;gap:12px}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.actions .secondary{justify-content:center}.battle-strip{gap:7px;padding:10px 8px}.avatar{width:48px;height:48px;font-size:17px}.hero .avatar-art{transform:scale(1.15) translateY(3px)}.enemy .avatar-art{transform:scale(1.1)}.combatant{gap:6px}.combatant strong{font-size:11px}.versus{font-size:9px;padding:6px 5px}.hp-wrap{width:82px}.overlay{position:fixed;overflow-y:auto;align-items:flex-start;padding:16px}.overlay .modal{max-height:calc(100dvh - 32px);overflow-y:auto;margin:auto}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style></head>
 <body><main class="app">
 <header class="brand">
   <div class="brand-left">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect class="lg-bg" x="1" y="1" width="62" height="62" rx="16"/><path class="lg-bolt" d="M36 8 16 38h10l-4 18 22-30H32z"/><circle class="lg-star" cx="46" cy="13" r="3"/></svg>
-    <div><h1>单词<span>冲刺</span></h1><p>把记忆变成一场小小的冒险 · 拼写、战斗与构筑全都在一局里</p></div>
+    <div><h1>单词<span>冲刺</span></h1><p>把记忆变成一场小小的冒险 · 拼写、战斗与连击全都在一局里</p></div>
   </div>
   <div class="pill">词汇冒险 · v2.3</div>
 </header>
@@ -230,7 +232,7 @@ textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
   <div class="prompt">
     <div class="tag" id="tag">准备开始</div>
     <div class="meaning" id="meaning">选择一个词库，开始你的第一局</div>
-    <div class="sentence" id="sentence">答对单词会积累连击，连续三回合可选择一个 Buff。</div>
+    <div class="sentence" id="sentence">答对单词会积累连击，连击越高，伤害和得分越高。</div>
     <div class="pattern" id="pattern">— — —</div>
     <div class="input-row">
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入英文单词，按 Enter 提交" disabled aria-label="拼写输入">
@@ -253,6 +255,7 @@ textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
       <h2 id="endTitle">本局结束</h2>
       <div class="end-score" id="endScore">0</div>
       <p class="end-sub" id="endText"></p>
+      <p class="end-sub" id="endReward"></p>
       <div class="miss-list" id="missList"></div>
       <button class="primary full" id="restart">再来一局</button>
     </div>
@@ -287,6 +290,11 @@ textarea{min-height:104px;resize:vertical;font-size:12.5px;line-height:1.5}
       <div class="mini"><b id="days">1/21</b><span>记忆计划</span></div>
     </div>
     <div class="progress"><i id="reviewBar"></i></div>
+    <div class="habit-line"><span>成长等级 <b id="level">Lv.1</b></span><b id="xpText">0/500 XP</b></div>
+    <div class="progress"><i id="xpBar"></i></div>
+    <div class="habit-line"><span>今日目标</span><b id="dailyGoal">0/5 词</b></div>
+    <div class="progress"><i id="dailyBar"></i></div>
+    <p class="tip" id="dailyHint" style="margin-top:8px">答对 5 个词，点亮今日目标。</p>
     <p class="tip" style="margin-top:8px">每局答对的词会记入本地进度。浏览器关闭也不会丢失。</p>
   </section>
   <section>
@@ -432,7 +440,7 @@ const store={
 
 /* ===== 状态 ===== */
 const state={deck:[],index:0,score:0,streak:0,correct:0,answered:0,hearts:3,maxTime:20,deadline:0,timer:null,running:false,paused:false,mode:'challenge',current:null,enemyHp:100,enemyMax:100};
-const saved=store.read('spellRushProgress',{learned:0,days:1,seen:[]});
+const saved=store.read('spellRushProgress',{learned:0,days:1,seen:[],xp:0,daily:0,dailyDate:''});
 const $=id=>document.getElementById(id);
 
 /* ===== 音效（Web Audio 合成，无需音频文件） ===== */
@@ -511,6 +519,11 @@ function updateReviewUI(){
   $('learned').textContent=saved.learned||0;
   $('days').textContent=(saved.days||1)+'/21';
   $('reviewBar').style.width=Math.min(100,(saved.days||1)/21*100)+'%';
+  const today=new Date().toISOString().slice(0,10);
+  if(saved.dailyDate!==today){saved.dailyDate=today;saved.daily=0;store.write('spellRushProgress',saved)}
+  const xp=saved.xp||0,level=Math.floor(xp/500)+1,within=xp%500;
+  $('level').textContent='Lv.'+level;$('xpText').textContent=within+'/500 XP';$('xpBar').style.width=(within/500*100)+'%';
+  const daily=Math.min(5,saved.daily||0);$('dailyGoal').textContent=daily+'/5 词';$('dailyBar').style.width=(daily/5*100)+'%';$('dailyHint').textContent=daily>=5?'今日目标已完成，明天继续保持！':'再答对 '+(5-daily)+' 个词，点亮今日目标。';
 }
 
 /* ===== 游戏流程 ===== */
@@ -538,7 +551,7 @@ function question(){
   stats();renderBattle();timerBar();
   clearInterval(state.timer);
   state.timer=setInterval(tick,200);
-  $('answer').focus();
+  if(window.matchMedia('(pointer:fine)').matches)$('answer').focus();
 }
 function tick(){
   if(state.paused)return;
@@ -556,6 +569,7 @@ function resolve(ok,msg){
     const gain=calcGain();
     const damage=Math.min(state.enemyMax,24+state.streak*7);
     state.correct++;state.streak++;state.score+=gain;
+    saved.xp=(saved.xp||0)+25;saved.dailyDate=new Date().toISOString().slice(0,10);saved.daily=(saved.dailyDate===new Date().toISOString().slice(0,10)?(saved.daily||0)+1:1);
     state.enemyHp=Math.max(0,state.enemyHp-damage);
     pushSeen(state.current[0],true);
     $('feedback').className='feedback good';
@@ -565,6 +579,7 @@ function resolve(ok,msg){
     $('gamePanel').classList.remove('correct');void $('gamePanel').offsetWidth;$('gamePanel').classList.add('correct');
     setTimeout(()=>$('gamePanel').classList.remove('correct'),560);
     damagePop('-'+damage);enemyHit();renderBattle();sfx.correct();floatScore($('gamePanel'),'+'+gain);
+    if([3,5,8].includes(state.streak)){toast(state.streak===8?'超神连击！':'连击 '+state.streak+'！');if(navigator.vibrate)navigator.vibrate(state.streak>=5?[30,40,30]:25)}
   }else{
     state.streak=0;state.hearts--;
     pushSeen(state.current[0],false);
@@ -596,6 +611,7 @@ function finish(){
   $('endTitle').textContent=state.mode==='review'?'复习完成':(state.hearts?'本局完成':'护盾耗尽');
   $('endScore').textContent=state.score;
   $('endText').textContent='正确 '+state.correct+'/'+state.answered+' · 正确率 '+pct+'%';
+  $('endReward').textContent='本局获得 '+(state.correct*25)+' XP · 今日目标 '+Math.min(5,saved.daily||0)+'/5';
   const misses=(state.misses||[]).slice(-8).reverse();
   $('missList').innerHTML=misses.length
     ?'<div class="miss-head">本局错题 · 点击可听发音</div>'+misses.map(m=>'<div class="miss-item" data-w="'+m.word+'"><b>'+m.word+'</b><span>'+m.meaning+'</span></div>').join('')
@@ -612,6 +628,7 @@ function begin(mode){
   Object.assign(state,{deck:shuffle(b),index:0,score:0,streak:0,correct:0,answered:0,hearts:3,misses:[],running:true,paused:false,mode,enemyHp:100,enemyMax:100});
   $('endOverlay').classList.remove('show');
   question();
+  if(!window.matchMedia('(pointer:fine)').matches)setTimeout(()=>$('gamePanel').scrollIntoView({behavior:'smooth',block:'start'}),60);
 }
 function submit(){
   if(!state.running||state.paused||!state.current||$('answer').disabled)return;
