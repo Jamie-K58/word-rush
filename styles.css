@@ -554,8 +554,12 @@ main { flex: 1; min-width: 0; }
   .hero-health-track { height: 4px; margin-top: 3px; }
   .enemy-health-track { height: 5px; margin-top: 8px; }
   .enemy-health-meta { margin-top: 6px; font-size: 10px; }
-  .scene-fighters { inset: 88px 16% 32px; }
-  .fighter { width: 34%; }
+  /* Keep both silhouettes inside the stage instead of letting the callout and
+     route strip crop their feet on narrow screens. */
+  .scene-fighters { inset: 82px 12% 45px; }
+  .fighter { width: 38%; height: 100%; }
+  .hero-fighter { left: 0; }
+  .enemy-fighter { right: 0; height: 92%; bottom: 0; }
   .round-route { bottom: 9px; gap: 7px; padding: 5px 10px; }
   .round-route i { width: 16px; height: 16px; font-size: 9px; }
   .round-route i.boss-node { width: 16px; height: 16px; }
@@ -697,8 +701,10 @@ main { flex: 1; min-width: 0; }
   .hero-hud .fighter-label b { font-size: 10px; }
   .enemy-health-meta { font-size: 10px; }
   .enemy-health-meta b { font-size: 10px; }
-  .scene-fighters { inset: 83px 12% 25px; }
-  .fighter { width: 37%; }
+  .scene-fighters { inset: 76px 8% 40px; }
+  .fighter { width: 41%; height: 100%; }
+  .hero-fighter { left: 0; }
+  .enemy-fighter { right: 0; height: 94%; bottom: 0; }
   .round-route { bottom: 8px; padding: 4px 9px; gap: 6px; }
   .round-route i, .round-route i.boss-node { width: 14px; height: 14px; font-size: 9px; }
   .scene-callout { max-width: 77%; font-size: 10px; bottom: 37px; }

@@ -32,7 +32,7 @@ npm run build
 - `word-utils.js`：旧词条兼容、词性解析、例句遮词、CSV/JSON 导入导出。
 - `教材词库.js`、`教材扩展词库.js`：原始教材数据，保持不变。
 - `assets/`：本地 Space Grotesk 字体及其 OFL 许可证。
-- `assets-hero.png`、`assets-enemy.png`、`assets-battle-bg-v2.webp`：沿用 GitHub 原版的玩家、怪物与战斗场景素材。
+- `assets-hero.webp`、`assets-enemy.webp`、`assets-battle-bg-v2.webp`：玩家、怪物与战斗场景素材。角色素材使用透明 WebP，移动端首屏下载量比原 PNG 更小。
 - `tests/`：数据回归、实际浏览器回归、静态服务与构建工具。
 
 ## 游戏规则

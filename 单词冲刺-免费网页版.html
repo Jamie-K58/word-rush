@@ -24,6 +24,9 @@
       type="font/woff2"
       crossorigin
     />
+    <link rel="preload" href="assets-battle-bg-v2.webp" as="image" fetchpriority="high" />
+    <link rel="preload" href="assets-hero.webp" as="image" fetchpriority="high" />
+    <link rel="preload" href="assets-enemy.webp" as="image" fetchpriority="high" />
     <script defer src="教材词库.js"></script>
     <script defer src="教材扩展词库.js"></script>
     <script defer src="word-utils.js"></script>
@@ -669,11 +672,11 @@
       </div>
       <div class="scene-fighters" aria-hidden="true">
         <div class="fighter hero-fighter">
-          <img src="assets-hero.png" alt="" draggable="false" />
+          <img src="assets-hero.webp" alt="" width="1024" height="1024" decoding="async" fetchpriority="high" draggable="false" />
           <span class="hero-crest" data-ui="heroCrest" aria-label="精英徽章" hidden>◇</span>
         </div>
         <div class="fighter enemy-fighter">
-          <img src="assets-enemy.png" alt="" draggable="false" />
+          <img src="assets-enemy.webp" alt="" width="1024" height="1024" decoding="async" fetchpriority="high" draggable="false" />
         </div>
       </div>
       <div class="attack-trail" aria-hidden="true"></div>
