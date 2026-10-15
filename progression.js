@@ -103,3 +103,7 @@ const Progression = (() => {
 
   return Object.freeze({ sync, render, rewardLabel, ids, masteredCount });
 })();
+
+// game.js is loaded as a separate deferred script and uses this explicit
+// namespace so the progression module remains compatible with the static entry.
+window.Progression = Progression;
