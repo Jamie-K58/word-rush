@@ -1,0 +1,20 @@
+{
+  "name": "word-rush",
+  "version": "3.0.0",
+  "private": true,
+  "description": "A framework-free spelling battle game with combos, Boss encounters and vocabulary learning.",
+  "scripts": {
+    "dev": "node tests/server.cjs",
+    "preview": "node tests/server.cjs --dist",
+    "build": "node tests/build.cjs",
+    "smoke": "npm run build && node tests/smoke.cjs",
+    "check": "node tests/check.cjs",
+    "test": "npm run test:data && npm run test:browser",
+    "test:data": "node --test tests/word-data.test.cjs",
+    "test:browser": "playwright test",
+    "test:ui": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}
