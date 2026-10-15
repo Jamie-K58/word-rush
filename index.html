@@ -30,6 +30,7 @@
     <script defer src="vocabulary.js"></script>
     <script defer src="data/cet4/cet4-bank.js"></script>
     <script defer src="battle.js"></script>
+    <script defer src="progression.js"></script>
     <script defer src="game.js"></script>
   </head>
   <body>
@@ -92,7 +93,7 @@
               ></div>
               <div class="arena-note">
                 <span class="status-dot"></span><span>遗迹试炼</span
-                ><span>第 10 回合 · BOSS 等待挑战</span>
+                ><span>普通 → 精英 → BOSS</span>
               </div>
             </div>
             <div class="ready-panel">
@@ -102,7 +103,7 @@
                 <p>看懂释义，拼出单词。<br />用连续命中，打出漂亮的一局。</p>
               </div>
               <div class="run-rules">
-                <span><b>10</b> 回合</span><span><b>3</b> 护盾</span
+                <span><b>≤ 10</b> 回合</span><span><b>3</b> 护盾</span
                 ><span class="boss-rule"><b>1</b> BOSS</span>
               </div>
               <div class="start-controls">
@@ -119,6 +120,19 @@
               <p class="resume-note" id="resumeNote" hidden>
                 本局已暂停，继续即可回到当前回合。
               </p>
+              <div class="chapter-progress" aria-label="章节推进">
+                <div class="chapter-progress-head">
+                  <span class="eyebrow" id="chapterLabel">CHAPTER 01 · 遗迹试炼</span>
+                  <span id="chapterProgress">0 / 3 已击败</span>
+                </div>
+                <div class="chapter-marks" id="chapterMarks">
+                  <span class="chapter-step is-current"><b>1</b><span>普通<small>词语史莱姆</small></span></span>
+                  <span class="chapter-step"><b>2</b><span>精英<small>词源巨像</small></span></span>
+                  <span class="chapter-step"><b>3</b><span>Boss<small>遗忘魔王</small></span></span>
+                </div>
+                <p id="chapterNext" class="chapter-note">下一目标：词语史莱姆 · 每局从普通战出发</p>
+                <p id="chapterReward" class="chapter-reward">通关奖励：100 XP + 王者印记</p>
+              </div>
             </div>
           </div>
           <div class="progress-strip">
@@ -142,6 +156,17 @@
             <button class="text-button" data-view="stats">
               成长记录 <span>→</span>
             </button>
+          </div>
+          <div class="journey-shelf">
+            <section class="journey-goals" aria-labelledby="journeyHeading">
+              <div class="journey-heading"><h2 id="journeyHeading">下一步，变得更强</h2><span>短期目标</span></div>
+              <ul id="journeyGoals"></ul>
+            </section>
+            <section class="journey-collection" aria-labelledby="collectionHeading">
+              <div class="journey-heading"><h2 id="collectionHeading">你的战斗收藏</h2><span id="collectionCount">0 / 4</span></div>
+              <ul id="cosmeticCollection"></ul>
+              <p class="collection-note">解锁即装备，在战场上展示。</p>
+            </section>
           </div>
         </section>
 
@@ -317,6 +342,8 @@
             <div class="reward-xp-track"><i id="rewardXpBar"></i></div>
             <p id="rewardNote">已计入你的成长记录</p>
           </div>
+          <p class="end-journey" id="endJourney"></p>
+          <div class="end-unlocks" id="endUnlocks" hidden aria-live="polite"></div>
           <div class="end-actions">
             <button class="primary" id="restart">再来一局 <span>→</span></button
             ><button class="text-button" id="endReview">复习本局错题 →</button>
@@ -529,13 +556,17 @@
         提交。词性显示在释义下方，展开例句可查看隐藏了目标词的语境提示。
       </p>
       <p>
-        每局 10 回合、3 格护盾，第 10 回合挑战 Boss。前 6 题限时 20 秒，第 7–9
-        题 15 秒，第 10 题 12 秒。答对获得 100 分，连击每次增加 10 分，最高每题
-        200 分。
+        每局最多 10 回合、3 格护盾。怪物的生命值跨单词保留，连续拼对 3 词即可击败第一只普通怪。
+        击败后再进入精英战与 Boss 战；Boss 生命归零才算通关。护盾耗尽或用完回合仍未击败 Boss，本局结束。
+        前 6 题限时 20 秒，第 7–9 题 15 秒，第 10 题 12 秒。
       </p>
       <p>
-        每次答对获得 25 XP，累计 500 XP
-        升一级。答错、跳过或超时损失一格护盾。提交后计时停止，读完词性、释义和完整例句，再进入下一回合。Esc
+        普通、精英、Boss 战的基础伤害分别为 32、44、56；达成 3 连击伤害 ×1.25，5 连击伤害 ×1.5。
+        答对获得 100 分，连击每次增加 10 分，最高每题 200 分。每次答对获得 25 XP，
+        击败普通、精英、Boss 额外奖励 30、60、100 XP；累计 500 XP 升一级。
+      </p>
+      <p>
+        答错、跳过或超时损失一格护盾并中断连击。提交后计时停止，读完词性、释义和完整例句，再手动进入下一回合。Esc
         可暂停，离开游戏或切换到后台也会自动暂停。错题保存在复习页。
       </p>
       <button class="primary" id="helpClose">GOT IT <span>→</span></button>
@@ -639,6 +670,7 @@
       <div class="scene-fighters" aria-hidden="true">
         <div class="fighter hero-fighter">
           <img src="assets-hero.png" alt="" draggable="false" />
+          <span class="hero-crest" data-ui="heroCrest" aria-label="精英徽章" hidden>◇</span>
         </div>
         <div class="fighter enemy-fighter">
           <img src="assets-enemy.png" alt="" draggable="false" />
@@ -654,7 +686,7 @@
         <i data-step="1">1</i><i data-step="2">2</i><i data-step="3">3</i
         ><i data-step="4">4</i><i data-step="5">5</i><i data-step="6">6</i
         ><i data-step="7">7</i><i data-step="8">8</i><i data-step="9">9</i
-        ><i data-step="10" class="boss-node">B</i>
+        ><i data-step="10">10</i>
       </div>
     </template>
     <div class="toast" id="toast" role="status"></div>

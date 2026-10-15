@@ -42,6 +42,9 @@ const saved = Object.assign(
     bestStreak: 0,
     bestScore: 0,
     perfectRuns: 0,
+    chapter: 1,
+    defeatedEncounters: [],
+    unlockedCosmetics: [],
   },
   storedProgress &&
     typeof storedProgress === "object" &&
@@ -50,6 +53,9 @@ const saved = Object.assign(
     : {},
 );
 if (!Array.isArray(saved.seen)) saved.seen = [];
+if (!Array.isArray(saved.defeatedEncounters)) saved.defeatedEncounters = [];
+if (!Array.isArray(saved.unlockedCosmetics)) saved.unlockedCosmetics = [];
+saved.chapter = Math.max(1, Number(saved.chapter) || 1);
 const storedLibraries = store.read("spellRushLibraries", []);
 const libraries = Array.isArray(storedLibraries)
   ? storedLibraries.filter(
@@ -84,6 +90,11 @@ const state = {
   hearts: 3,
   enemyHp: 100,
   enemyMax: 100,
+  encounter: 0,
+  enemyDefeated: false,
+  newEncounterPending: false,
+  victory: false,
+  xpEarned: 0,
   startingXp: 0,
   lastBattleMessage: "",
   maxTime: 20,
@@ -335,6 +346,28 @@ function updateHome() {
   const weak = reviewRecords().filter((x) => !x.last.ok).length;
   $("reviewCount").textContent = weak;
   $("reviewCount").hidden = !weak;
+  if ($("chapterLabel")) {
+    const defeated = saved.defeatedEncounters.length;
+    const chapter = Math.min(3, Math.max(1, saved.chapter || 1));
+    $("chapterLabel").textContent = "CHAPTER " + chapter;
+    $("chapterProgress").textContent =
+      defeated + " / 3 怪物已击败 · " +
+      (chapter >= 3
+        ? "Boss 徽记已解锁"
+        : "下一目标：" + (chapter === 1 ? "词语史莱姆" : "遗忘魔王"));
+    $("chapterMarks").innerHTML = ["词语史莱姆", "词源巨像", "遗忘魔王"]
+      .map(
+        (name, i) =>
+          '<span class="' +
+          (saved.defeatedEncounters.includes(name) ? "is-done" : "") +
+          (i + 1 === chapter ? " is-current" : "") +
+          '">' +
+          (saved.defeatedEncounters.includes(name) ? "✓" : i + 1) +
+          "</span>",
+      )
+      .join("");
+  }
+  if (window.Progression) Progression.render(saved);
   BattleUI.progress(saved.xp);
   BattleUI.render(state, saved);
 }
@@ -426,10 +459,9 @@ function question() {
   state.paused = false;
   const d = details(state.current),
     r = state.index + 1;
-  // Restore the original encounter and damage model, independently of score.
-  const enemy = BattleUI.enemyFor(r);
-  state.enemyMax = enemy.max;
-  state.enemyHp = enemy.max;
+  // Enemy health belongs to the encounter, so moving to a new question does
+  // not heal the current enemy. A new encounter is initialized by next().
+  const enemy = BattleUI.encounterFor(state.encounter || 0);
   state.lastBattleMessage = "";
   state.maxTime = r >= 10 ? 12 : r >= 7 ? 15 : 20;
   state.time = state.maxTime;
@@ -460,9 +492,14 @@ function question() {
   $("pausedPanel").hidden = true;
   $("inputRow").classList.remove("shake");
   $("battleTip").textContent = enemy.boss
-    ? "最终回合 · 12 秒完成拼写，保持专注。"
+    ? "BOSS 战 · 生命值跨题保留，完成最后一击。"
     : "拼对单词发动攻击，连续命中提升伤害。";
-  BattleUI.newRound();
+  if (state.newEncounterPending) {
+    state.newEncounterPending = false;
+    BattleUI.newEncounter(!!enemy.boss);
+  } else {
+    BattleUI.newRound();
+  }
   setEnabled(true);
   stats();
   timerBar();
@@ -481,6 +518,14 @@ function tick() {
 }
 function calcGain() {
   return 100 + Math.min(100, state.streak * 10);
+}
+function enterEncounter(index) {
+  const encounter = BattleUI.encounterFor(index);
+  state.encounter = Math.max(0, Math.min(2, Number(index) || 0));
+  state.enemyMax = encounter.max;
+  state.enemyHp = encounter.max;
+  state.enemyDefeated = false;
+  state.newEncounterPending = true;
 }
 function pushSeen(word, ok) {
   saved.seen.push({ word, ok, ts: Date.now() });
@@ -548,6 +593,10 @@ function answerDifference(value, correct) {
 }
 function resolve(ok, reason = "answer") {
   if (!state.running || state.phase !== "question" || state.paused) return;
+  // A delayed submit can arrive after the browser has not fired the timer tick.
+  // The deadline is authoritative, so it must never score as a correct answer.
+  if (reason !== "timeout" && state.deadline && Date.now() >= state.deadline)
+    return resolve(false, "timeout");
   clearInterval(state.timer);
   state.phase = "feedback";
   setEnabled(false);
@@ -556,11 +605,23 @@ function resolve(ok, reason = "answer") {
   const d = details(state.current),
     typed = $("answer").value.trim();
   let gain = 0,
-    damage = 0;
+    damage = 0,
+    defeated = false,
+    encounter = BattleUI.encounterFor(state.encounter || 0);
   if (ok) {
     gain = calcGain();
-    damage = Math.min(state.enemyMax, 24 + state.streak * 7);
+    const nextStreak = state.streak + 1;
+    const comboMultiplier =
+      nextStreak >= 5 ? 1.5 : nextStreak >= 3 ? 1.25 : 1;
+    // Combo milestones add burst damage. Clamp the final hit to the remaining
+    // HP so the floating number communicates the actual amount removed.
+    damage = Math.min(
+      state.enemyHp,
+      Math.round(encounter.attack * comboMultiplier),
+    );
     state.enemyHp = Math.max(0, state.enemyHp - damage);
+    defeated = state.enemyHp <= 0;
+    state.enemyDefeated = defeated;
     state.correct++;
     state.streak++;
     state.score += gain;
@@ -571,11 +632,15 @@ function resolve(ok, reason = "answer") {
       saved.dailyDate = today;
     }
     saved.daily = (saved.daily || 0) + 1;
-    saved.xp = (saved.xp || 0) + 25;
+    const earnedXp = 25 + (defeated ? encounter.reward || 0 : 0);
+    state.xpEarned += earnedXp;
+    saved.xp = (saved.xp || 0) + earnedXp;
     saved.learned = (saved.learned || 0) + 1;
     saved.bestStreak = Math.max(saved.bestStreak || 0, state.streak);
     state.lastBattleMessage =
-      ([3, 5, 8].includes(state.streak)
+      (defeated
+        ? "击败 " + encounter.name + "！+" + (encounter.reward || 0) + " XP · "
+        : [3, 5, 8].includes(state.streak)
         ? "连击突破 × " + state.streak + " · "
         : "命中！ ") +
       "造成 " +
@@ -607,9 +672,35 @@ function resolve(ok, reason = "answer") {
   pushSeen(d.word, ok);
   persist();
   stats();
-  BattleUI.hit(ok, damage, state.streak);
+  BattleUI.hit(ok, damage, state.streak, defeated);
   $("questionArea").hidden = true;
-  const end = state.hearts <= 0 || state.index + 1 >= 10;
+  if (defeated && encounter.boss) state.victory = true;
+  if (defeated) {
+    if (!saved.defeatedEncounters.includes(encounter.name))
+      saved.defeatedEncounters.push(encounter.name);
+    saved.chapter = Math.max(saved.chapter || 1, Math.min(3, state.encounter + 2));
+    if (state.encounter === 1 && !saved.unlockedCosmetics.includes("elite-crest"))
+      saved.unlockedCosmetics.push("elite-crest");
+    if (encounter.boss && !saved.unlockedCosmetics.includes("boss-aura"))
+      saved.unlockedCosmetics.push("boss-aura");
+  }
+  if (state.streak >= 5 && !saved.unlockedCosmetics.includes("combo-mark"))
+    saved.unlockedCosmetics.push("combo-mark");
+  if (window.Progression) Progression.sync(saved);
+  if (defeated && encounter.boss) state.victory = true;
+  persist();
+  const end =
+    state.hearts <= 0 || state.victory || state.index + 1 >= 10;
+  const nextEncounter = defeated
+    ? BattleUI.encounterFor(state.encounter + 1)
+    : null;
+  const nextLabel = end
+    ? "查看战果"
+    : defeated
+      ? nextEncounter.boss
+        ? "挑战 Boss"
+        : "进入精英战"
+      : "下一回合";
   $("feedback").className = "feedback " + (ok ? "good" : "bad") + " view-enter";
   $("feedback").innerHTML =
     '<div class="feedback-head"><span class="feedback-symbol" aria-hidden="true">' +
@@ -640,12 +731,14 @@ function resolve(ok, reason = "answer") {
     (ok
       ? '<strong class="feedback-gain">+' +
         gain +
-        '</strong><span class="feedback-xp">+25 XP</span>'
+        '</strong><span class="feedback-xp">+' +
+        (25 + (defeated ? encounter.reward || 0 : 0)) +
+        ' XP</span>'
       : "") +
     '<span class="feedback-combo">COMBO × ' +
     String(state.streak).padStart(2, "0") +
     '</span></div><button class="primary" id="next">' +
-    (end ? "查看战果" : "下一回合") +
+    nextLabel +
     ' <span>→</span></button></div><button class="text-button pronunciation" data-pronounce="' +
     escapeHtml(d.word) +
     '">↗ 听发音</button>';
@@ -656,6 +749,7 @@ function resolve(ok, reason = "answer") {
     if (end) finish();
     else {
       state.index++;
+      if (state.enemyDefeated) enterEncounter(state.encounter + 1);
       question();
     }
   };
@@ -731,8 +825,13 @@ function begin(mode = "challenge") {
     correct: 0,
     answered: 0,
     hearts: 3,
-    enemyHp: 100,
-    enemyMax: 100,
+    enemyHp: BattleUI.encounterFor(0).max,
+    enemyMax: BattleUI.encounterFor(0).max,
+    encounter: 0,
+    enemyDefeated: false,
+    newEncounterPending: false,
+    victory: false,
+    xpEarned: 0,
     startingXp: saved.xp || 0,
     lastBattleMessage: "",
     misses: [],
@@ -750,6 +849,10 @@ function begin(mode = "challenge") {
 function submit() {
   if (state.phase !== "question" || state.paused || !state.running) return;
   const v = $("answer").value.trim().toLowerCase().replace(/\s+/g, " ");
+  if (state.deadline && Date.now() >= state.deadline) {
+    resolve(false, "timeout");
+    return;
+  }
   if (!v) {
     toast("先输入答案");
     return;
@@ -768,11 +871,11 @@ function finish() {
   const oldBest = saved.bestScore || 0;
   saved.bestScore = Math.max(oldBest, state.score);
   saved.days = Math.min(21, (saved.days || 1) + (state.correct >= 6 ? 1 : 0));
-  if (state.correct === 10 && state.answered === 10)
+  if (state.victory && state.correct === state.answered)
     saved.perfectRuns = (saved.perfectRuns || 0) + 1;
   saved.runs = (saved.runs || 0) + 1;
   persist();
-  const completed = state.answered === 10 && state.hearts > 0;
+  const completed = state.victory;
   $("endView").classList.toggle("is-victory", completed);
   $("endKicker").textContent = completed ? "TRIAL COMPLETE" : "RUN COMPLETE";
   $("endTitle").textContent =
@@ -782,7 +885,9 @@ function finish() {
         ? "试炼完成！"
         : state.hearts <= 0
           ? "休整，再出发。"
-          : "本次挑战结束";
+          : state.encounter === 2
+            ? "Boss 还未倒下"
+            : "继续推进，别停在这里";
   $("endScore").textContent = state.score;
   $("endCorrect").textContent = state.correct + " / " + state.answered;
   $("endCombo").textContent = state.bestStreak;
@@ -790,7 +895,7 @@ function finish() {
   $("newBest").hidden = state.score <= oldBest;
   $("endReward").textContent =
     "+" +
-    state.correct * 25 +
+    state.xpEarned +
     " XP · " +
     Math.round((state.correct / Math.max(1, state.answered)) * 100) +
     "% 命中率";
@@ -1423,6 +1528,10 @@ $("restoreProgress").onchange = async (e) => {
 
 BattleUI.init();
 syncPresets(store.read("spellRushPreset", "cet4"));
+if (window.Progression) {
+  Progression.sync(saved);
+  persist();
+}
 renderLibrary();
 stats();
 updateHome();

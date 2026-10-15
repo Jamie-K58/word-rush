@@ -116,6 +116,13 @@ main { flex: 1; min-width: 0; }
 .home-meta { display: flex; justify-content: space-between; gap: 14px; margin-top: 21px; color: var(--muted); font-family: var(--mono); font-size: 9px; }
 .home-meta b { display: inline-block; margin-left: 5px; color: var(--gold); font-family: var(--display); font-size: 17px; font-weight: 600; }
 .resume-note { margin-top: 15px; color: var(--accent); font-size: 12px; }
+.chapter-progress { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.chapter-progress-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px 12px; color: var(--muted); font-size: 10px; }
+.chapter-progress-head .eyebrow { color: var(--gold); font-size: 9px; }
+.chapter-marks { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
+.chapter-marks span { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid #47616a; border-radius: 50%; color: #9db5bb; background: #172d35; font-family: var(--mono); font-size: 9px; }
+.chapter-marks span.is-current { color: #2a2d21; border-color: var(--gold); background: var(--gold); }
+.chapter-marks span.is-done { color: #17322c; border-color: var(--accent); background: var(--accent); }
 .progress-strip { display: flex; align-items: center; gap: 16px; padding: 17px 20px; margin-top: 20px; border: 1px solid #28454f; border-radius: 15px; background: #11262f; }
 .level-emblem { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 14px; border: 1px solid #527867; color: var(--gold); background: #233c37; font-family: var(--display); font-size: 18px; font-weight: 700; }
 .progress-copy { min-width: 0; flex: 1; }
@@ -166,7 +173,11 @@ main { flex: 1; min-width: 0; }
 .enemy-fighter { right: 0; height: 88%; bottom: 9%; }
 .enemy-fighter::before { bottom: -17px; left: 13%; right: 13%; }
 .enemy-fighter img { filter: drop-shadow(0 7px 8px #190a307a); }
-.scene-callout { position: absolute; z-index: 4; bottom: 62px; left: 50%; max-width: 80%; transform: translateX(-50%); padding: 6px 12px; border: 1px solid #98dec641; border-radius: 8px; color: var(--accent); background: #071c28d9; font-family: var(--display); font-size: 13px; font-weight: 600; text-align: center; white-space: nowrap; pointer-events: none; }
+.hero-crest { position: absolute; z-index: 2; top: 12%; right: 4%; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--gold); border-radius: 50%; color: var(--gold); background: #182d2bd9; font-family: var(--display); font-size: 14px; box-shadow: 0 0 0 3px #f6c86c1c; }
+.battle-scene.has-jade-mantle .hero-fighter img { filter: hue-rotate(55deg) saturate(1.2) drop-shadow(0 5px 6px #00141e80); }
+.battle-scene.has-boss-sigil .hero-fighter::after { content: "✧"; position: absolute; left: 50%; bottom: -5px; color: var(--gold); font-size: 16px; transform: translateX(-50%); }
+.battle-scene.has-combo-trail .attack-trail { background: var(--gold); box-shadow: 0 0 11px #ffd16e; }
+.scene-callout { position: absolute; z-index: 4; bottom: 62px; left: 50%; max-width: min(80%, 360px); transform: translateX(-50%); padding: 6px 12px; border: 1px solid #98dec641; border-radius: 8px; color: var(--accent); background: #071c28d9; font-family: var(--display); font-size: 13px; font-weight: 600; line-height: 1.25; text-align: center; white-space: normal; pointer-events: none; }
 .scene-callout:empty { display: none; }
 .damage-number { position: absolute; z-index: 6; opacity: 0; right: 21%; top: 32%; color: var(--gold); font-family: var(--display); font-size: 36px; font-weight: 700; letter-spacing: -.05em; text-shadow: 0 3px 0 #1d0e24; pointer-events: none; }
 .damage-number:empty { display: none; }
@@ -196,6 +207,12 @@ main { flex: 1; min-width: 0; }
 .battle-scene.hero-is-hit .hero-hud { animation: shield-hit 300ms var(--ease); }
 .battle-scene.hero-is-hit::after { opacity: 1; box-shadow: inset 0 0 0 2px #ff8a8540; animation: scene-hit 300ms var(--ease); }
 .battle-scene.combo-burst .scene-callout { color: var(--gold); border-color: #ffd16e75; animation: combo-pulse 300ms var(--ease); }
+.battle-scene.combo-super .scene-callout { color: #fff0b0; border-color: #fff0b0a8; animation: combo-super 340ms var(--ease); }
+.battle-scene.combo-super .attack-trail { background: var(--gold); box-shadow: 0 0 16px var(--gold); height: 5px; }
+.battle-scene.enemy-defeated .enemy-fighter { animation: enemy-defeated 420ms var(--ease) both; }
+.battle-scene.enemy-defeated .enemy-health-track { animation: defeated-track 420ms var(--ease) both; }
+.battle-scene.boss-entrance::before { animation: boss-entrance 450ms var(--ease) both; }
+.battle-scene.boss-entrance .enemy-fighter { animation: boss-rise 450ms var(--ease) both; }
 .battle-scene.round-enter .scene-callout { animation: round-enter 300ms var(--ease) both; }
 
 /* One HUD and a focused spell panel sit alongside the arena. */
@@ -441,6 +458,11 @@ main { flex: 1; min-width: 0; }
 @keyframes shield-hit { 35% { border-color: var(--danger); background: #4f2334dc; } }
 @keyframes scene-hit { 0%, 100% { opacity: 0; } 40% { opacity: 1; } }
 @keyframes round-enter { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes combo-super { 0%, 100% { scale: 1; } 40% { scale: 1.2; } 70% { scale: 1.05; } }
+@keyframes enemy-defeated { 0% { opacity: 1; scale: 1; } 55% { opacity: .8; scale: 1.08; filter: brightness(1.5); } 100% { opacity: .22; scale: .8; } }
+@keyframes defeated-track { 0% { filter: brightness(1); } 35% { filter: brightness(2); } 100% { opacity: .45; } }
+@keyframes boss-entrance { from { opacity: .35; filter: saturate(.7) brightness(.7); } 45% { opacity: 1; filter: saturate(1.4) brightness(1.25); } to { opacity: 1; filter: saturate(1.1) brightness(1); } }
+@keyframes boss-rise { from { opacity: .1; transform: scale(.88) translateY(12px); } to { opacity: 1; transform: scale(1.1) translateY(0); } }
 
 @media (min-width: 761px) {
   .home-arena { display: flex; flex-direction: column; }

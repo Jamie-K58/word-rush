@@ -168,22 +168,25 @@ test('pause, navigation and help preserve remaining time and answer', async ({ p
   await expect(page.locator('#pausedPanel')).toBeVisible();
 });
 
-test('ten correct answers keep original score, timing and persistence rules', async ({ page }, testInfo) => {
+test('a perfect run keeps score, timing and persistence rules', async ({ page }, testInfo) => {
   await load(page);
   await start(page);
-  for (let i = 0; i < 10; i++) {
-    expect(await page.evaluate(() => state.maxTime)).toBe(i === 9 ? 12 : i >= 6 ? 15 : 20);
+  let rounds = 0;
+  while (await page.evaluate(() => state.running)) {
+    expect(await page.evaluate(() => state.maxTime)).toBe(rounds >= 6 ? 15 : 20);
     await answer(page);
     await page.locator('#next').click();
+    rounds++;
   }
   await expect(page.locator('#endView')).toBeVisible();
-  await expect(page.locator('#endScore')).toHaveText('1450');
-  await expect(page.locator('#endCombo')).toHaveText('10');
-  await expect(page.locator('#endCorrect')).toContainText('10');
+  expect(rounds).toBe(8);
+  await expect(page.locator('#endScore')).toHaveText('1080');
+  await expect(page.locator('#endCombo')).toHaveText('8');
+  await expect(page.locator('#endCorrect')).toContainText('8');
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('spellRushProgress')));
-  expect(progress.learned).toBe(33);
-  expect(progress.xp).toBe(825);
-  expect(progress.bestStreak).toBe(10);
+  expect(progress.learned).toBe(31);
+  expect(progress.xp).toBe(965);
+  expect(progress.bestStreak).toBe(8);
   expect(progress.perfectRuns).toBe(2);
   expect(progress.bestScore).toBe(1840);
   expect(progress.legacyExtension).toEqual({ preserved: true });

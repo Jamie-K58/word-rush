@@ -36,11 +36,11 @@ const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || (fs.existsSync(
     await page.locator('#answer').press('Enter');
     await page.locator('#next').waitFor({ state: 'visible' });
     if ((await page.locator('#score').textContent()) !== '100') throw new Error('Built game did not score its first answer.');
-    if ((await page.locator('#gameView [data-ui="enemyHealth"]').textContent()) !== '76 / 100') throw new Error('Built battle did not apply the original damage.');
+    if ((await page.locator('#gameView [data-ui="enemyHealth"]').textContent()) !== '58 / 90') throw new Error('Built battle did not apply stage damage.');
     await page.goto('http://127.0.0.1:4175/' + encodeURIComponent('单词冲刺-免费网页版.html'));
     await page.locator('#start').waitFor({ state: 'visible' });
     if (errors.length) throw new Error(errors.join('\n'));
-    process.stdout.write('Built site smoke passed: battle artwork, original damage, vocabulary, submission, score, legacy entry and browser console.\n');
+    process.stdout.write('Built site smoke passed: battle artwork, stage damage, vocabulary, submission, score, legacy entry and browser console.\n');
   } finally {
     if (browser) await browser.close();
     server.kill();

@@ -1,14 +1,20 @@
 "use strict";
 
-// Presentation for the original battle rules. No timers or answer decisions live here.
+// Battle presentation only. Encounter state and answer decisions stay in game.js.
 const BattleUI = (() => {
-  const enemies = [
-    ["词语史莱姆", 190],
-    ["迷雾蝙蝠", 262],
-    ["拼写哥布林", 48],
-    ["语法幽灵", 310],
-    ["词源巨像", 125],
-    ["Boss · 遗忘魔王", 0],
+  const encounters = [
+    { name: "词语史莱姆", hue: 190, stage: "普通战", max: 90, attack: 32, reward: 30 },
+    { name: "词源巨像", hue: 125, stage: "精英战", max: 120, attack: 44, reward: 60 },
+    {
+      name: "遗忘魔王",
+      hue: 0,
+      stage: "BOSS 战",
+      // Stage-scaled attacks let a broken combo recover within ten turns.
+      max: 200,
+      attack: 56,
+      reward: 100,
+      boss: true,
+    },
   ];
   const effects = new WeakMap();
   const effectClasses = [
@@ -16,19 +22,15 @@ const BattleUI = (() => {
     "enemy-is-hit",
     "hero-is-hit",
     "combo-burst",
+    "combo-super",
     "round-enter",
+    "enemy-defeated",
+    "boss-entrance",
   ];
   let scenes = [];
 
-  function enemyFor(round) {
-    const boss = round === 10;
-    const [name, hue] = enemies[boss ? 5 : (round - 1) % 5];
-    return {
-      name,
-      hue,
-      max: boss ? 150 : 100 + Math.floor((round - 1) / 3) * 10,
-      boss,
-    };
+  function encounterFor(index) {
+    return encounters[Math.max(0, Math.min(encounters.length - 1, index))];
   }
   function level(xp) {
     return Math.floor(Math.max(0, Number(xp) || 0) / 500) + 1;
@@ -55,7 +57,9 @@ const BattleUI = (() => {
     scenes.forEach((scene) => {
       const preview = scene.dataset.preview === "true" && !state.running;
       const round = preview ? 1 : Math.min(10, state.index + 1);
-      const enemy = enemyFor(round);
+      const enemy = preview
+        ? encounterFor(0)
+        : encounterFor(state.encounter || 0);
       const hearts = preview ? 3 : state.hearts;
       const hp = preview ? enemy.max : state.enemyHp;
       const max = preview ? enemy.max : state.enemyMax;
@@ -67,9 +71,7 @@ const BattleUI = (() => {
       ui("shields").setAttribute("aria-label", "剩余 " + hearts + " 格护盾");
       ui("heroHp").style.width = Math.max(0, (hearts / 3) * 100) + "%";
       ui("enemyName").textContent = enemy.name;
-      ui("enemyMeta").textContent = enemy.boss
-        ? "最终首领"
-        : "Lv." + Math.ceil(round / 2);
+      ui("enemyMeta").textContent = enemy.stage;
       ui("enemyHealth").textContent = hp + " / " + max;
       ui("enemyHp").style.width =
         Math.max(0, Math.min(100, (hp / max) * 100)) + "%";
@@ -80,7 +82,15 @@ const BattleUI = (() => {
         ? "saturate(1.1)"
         : "hue-rotate(" + enemy.hue + "deg) saturate(.85)";
       scene.classList.toggle("is-boss", enemy.boss);
+      scene.classList.toggle("is-elite", !enemy.boss && enemy === encounters[1]);
+      scene.classList.toggle("is-defeated", !preview && state.enemyDefeated);
       scene.classList.toggle("is-paused", !preview && state.paused);
+      const unlocked = progress.unlockedCosmetics || [];
+      scene.classList.toggle("has-combo-trail", unlocked.includes("combo-mark"));
+      scene.classList.toggle("has-jade-mantle", unlocked.includes("word-keeper"));
+      scene.classList.toggle("has-boss-sigil", unlocked.includes("boss-aura"));
+      const heroCrest = ui("heroCrest");
+      if (heroCrest) heroCrest.hidden = !unlocked.includes("elite-crest");
       scene.querySelectorAll("[data-step]").forEach((node) => {
         const step = Number(node.dataset.step);
         const resolved = !preview && step <= state.answered;
@@ -93,7 +103,6 @@ const BattleUI = (() => {
           "第 " +
             step +
             " 回合" +
-            (step === 10 ? " Boss" : "") +
             (resolved ? (miss ? "，未命中" : "，命中") : ""),
         );
       });
@@ -103,8 +112,10 @@ const BattleUI = (() => {
           ? "战斗暂停 · 护盾与时间已冻结"
           : state.phase === "feedback"
             ? state.lastBattleMessage
-            : enemy.boss
-              ? "BOSS 来袭 · 最后一个单词，稳住！"
+          : enemy.boss
+              ? "BOSS 来袭 · 连击蓄势，完成最后一击！"
+              : enemy.stage === "精英战"
+                ? "精英战 · 护住连击，集中火力。"
               : state.streak >= 3
                 ? "连击 × " + state.streak + " · 保持你的攻击节奏"
                 : "看准释义，用拼写发动攻击。";
@@ -122,7 +133,15 @@ const BattleUI = (() => {
       );
     });
   }
-  function hit(ok, damage, streak) {
+  function newEncounter(boss = false) {
+    scenes.forEach((scene) => {
+      resetEffects(scene);
+      void scene.offsetWidth;
+      scene.classList.add(boss ? "boss-entrance" : "round-enter");
+      effects.set(scene, setTimeout(() => scene.classList.remove("boss-entrance", "round-enter"), 350));
+    });
+  }
+  function hit(ok, damage, streak, defeated = false) {
     const scene = scenes.find((s) => s.dataset.preview !== "true");
     if (!scene) return;
     resetEffects(scene);
@@ -133,10 +152,15 @@ const BattleUI = (() => {
     scene.classList.add(
       ...(ok ? ["is-attacking", "enemy-is-hit"] : ["hero-is-hit"]),
     );
-    if (ok && [3, 5, 8].includes(streak)) scene.classList.add("combo-burst");
+    if (ok && streak >= 3) scene.classList.add("combo-burst");
+    if (ok && streak >= 5) scene.classList.add("combo-super");
+    if (ok && defeated) scene.classList.add("enemy-defeated");
+    const transient = defeated
+      ? effectClasses.filter((name) => name !== "enemy-defeated")
+      : effectClasses;
     effects.set(
       scene,
-      setTimeout(() => scene.classList.remove(...effectClasses), 350),
+      setTimeout(() => scene.classList.remove(...transient), 350),
     );
   }
   function progress(xp) {
@@ -165,10 +189,11 @@ const BattleUI = (() => {
   }
   return Object.freeze({
     init,
-    enemyFor,
+    encounterFor,
     level,
     render,
     newRound,
+    newEncounter,
     hit,
     progress,
     reward,
